@@ -1,6 +1,8 @@
 from typing import Dict, Any, Optional
 from agents.base_agent import BaseAgent
+from app.tracing import trace_agent_execution
 import uuid
+import time
 
 
 class Orchestrator:
@@ -19,6 +21,7 @@ class Orchestrator:
         """
         self.agents[agent.name] = agent
     
+    @trace_agent_execution
     def execute(self, agent_name: str, input_data: Dict[str, Any], session_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Execute a specific agent by name
@@ -44,21 +47,29 @@ class Orchestrator:
                 'history': []
             }
         
+        # Start timing for execution
+        start_time = time.time()
+        
         # Execute the agent
         agent = self.agents[agent_name]
         result = agent.run(input_data)
+        
+        # Calculate execution time
+        execution_time_ms = (time.time() - start_time) * 1000
         
         # Track execution in session
         self.sessions[session_id]['history'].append({
             'agent': agent_name,
             'input': input_data,
-            'output': result
+            'output': result,
+            'execution_time_ms': execution_time_ms
         })
         
         return {
             'session_id': session_id,
             'agent': agent_name,
-            'result': result
+            'result': result,
+            'execution_time_ms': execution_time_ms
         }
     
     def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:

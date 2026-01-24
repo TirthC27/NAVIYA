@@ -1,5 +1,6 @@
 from typing import Dict, Any
 from agents.base_agent import BaseAgent
+import opik
 
 
 class PlannerAgent(BaseAgent):
@@ -8,6 +9,7 @@ class PlannerAgent(BaseAgent):
     def __init__(self):
         super().__init__("planner")
     
+    @opik.track(name="planner_agent_execution", type="general")
     def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate a learning roadmap
