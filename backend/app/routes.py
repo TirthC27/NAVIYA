@@ -1,4 +1,7 @@
 from flask import jsonify, request, current_app
+from app.supabase_client import get_supabase_client
+from datetime import datetime
+import uuid
 
 
 def register_routes(app):
@@ -24,6 +27,13 @@ def register_routes(app):
             input_data = data.get('input', {})
             session_id = data.get('session_id')
             
+            # Validate session exists if provided
+            if session_id:
+                supabase = get_supabase_client()
+                session_check = supabase.table('learning_sessions').select('id').eq('id', session_id).execute()
+                if not session_check.data:
+                    return jsonify({"error": "Session not found"}), 404
+            
             result = current_app.orchestrator.execute(
                 agent_name=agent_name,
                 input_data=input_data,
@@ -40,8 +50,45 @@ def register_routes(app):
     
     @app.route('/sessions/<session_id>', methods=['GET'])
     def get_session(session_id):
-        """Get session data"""
-        session = current_app.orchestrator.get_session(session_id)
-        if session is None:
-            return jsonify({"error": "Session not found"}), 404
-        return jsonify(session)
+        """Get session data from Supabase"""
+        try:
+            supabase = get_supabase_client()
+            response = supabase.table('learning_sessions').select('*').eq('id', session_id).execute()
+            
+            if not response.data:
+                return jsonify({"error": "Session not found"}), 404
+            
+            return jsonify(response.data[0]), 200
+            
+        except Exception as e:
+            app.logger.error(f"Error fetching session: {str(e)}")
+            return jsonify({"error": "Failed to fetch session"}), 500
+    
+    @app.route('/session/start', methods=['POST'])
+    def start_session():
+        """Create a new learning session"""
+        try:
+            data = request.get_json()
+            if not data or 'topic' not in data:
+                return jsonify({"error": "Topic is required"}), 400
+            
+            supabase = get_supabase_client()
+            
+            session_data = {
+                'id': str(uuid.uuid4()),
+                'topic': data['topic'],
+                'current_mission': data.get('current_mission', 'Planning'),
+                'eta_days': data.get('eta_days', 30),
+                'start_time': datetime.utcnow().isoformat()
+            }
+            
+            response = supabase.table('learning_sessions').insert(session_data).execute()
+            
+            if not response.data:
+                return jsonify({"error": "Failed to create session"}), 500
+            
+            return jsonify(response.data[0]), 201
+            
+        except Exception as e:
+            app.logger.error(f"Error creating session: {str(e)}")
+            return jsonify({"error": "Failed to create session"}), 500

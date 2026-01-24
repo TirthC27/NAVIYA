@@ -1,6 +1,7 @@
 from typing import Dict, Any, Optional
 from agents.base_agent import BaseAgent
 from app.tracing import trace_agent_execution
+from app.supabase_client import get_supabase_client
 import uuid
 import time
 
@@ -37,11 +38,19 @@ class Orchestrator:
         if agent_name not in self.agents:
             raise ValueError(f"Agent '{agent_name}' not found")
         
-        # Generate or use existing session ID
-        if session_id is None:
+        # Validate session exists in Supabase if provided
+        if session_id:
+            try:
+                supabase = get_supabase_client()
+                response = supabase.table('learning_sessions').select('id').eq('id', session_id).execute()
+                if not response.data:
+                    raise ValueError(f"Session '{session_id}' not found in database")
+            except Exception as e:
+                raise ValueError(f"Invalid session: {str(e)}")
+        else:
             session_id = str(uuid.uuid4())
         
-        # Store session data
+        # Store session data in memory cache
         if session_id not in self.sessions:
             self.sessions[session_id] = {
                 'history': []

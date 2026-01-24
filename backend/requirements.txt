@@ -1,3 +1,4 @@
 Flask==3.1.0
 python-dotenv==1.0.1
 opik==1.9.98
+supabase==2.27.2
