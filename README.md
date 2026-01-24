@@ -1,17 +1,42 @@
 # NAVIYA - Learning Agent System
 
-Project scaffold for a Learning Agent System with React frontend and Flask backend.
+A modular learning agent platform with React frontend and Flask backend.
 
-## Project Structure
+## Vision
+
+NAVIYA is built to provide a clean foundation for learning agent systems. The architecture keeps frontend and backend separate, allowing for flexible development and deployment.
+
+## Architecture
 
 ```
-/frontend          - React + TypeScript + Vite + TailwindCSS
-/backend           - Python Flask API
+┌─────────────────┐         ┌─────────────────┐
+│   React App     │ ◄────► │   Flask API     │
+│  (TypeScript)   │  HTTP   │   (Python)      │
+├─────────────────┤         ├─────────────────┤
+│ • UI Components │         │ • REST Routes   │
+│ • State Mgmt    │         │ • Config System │
+│ • Routing       │         │ • Logging       │
+└─────────────────┘         └─────────────────┘
+     Port 5173                   Port 5000
 ```
 
-## Setup Instructions
+## Tech Stack
 
-### Frontend Setup
+**Frontend**
+- React 18 with TypeScript
+- Vite (build tool)
+- TailwindCSS (styling)
+- shadcn/ui (component library)
+
+**Backend**
+- Python 3.x
+- Flask (web framework)
+- Environment-based config
+- Structured logging
+
+## Quick Start
+
+### Frontend
 
 ```bash
 cd frontend
@@ -19,25 +44,41 @@ npm install
 npm run dev
 ```
 
-Frontend will run on `http://localhost:5173`
+Visit `http://localhost:5173`
 
-### Backend Setup
+### Backend
 
 ```bash
 cd backend
 python -m venv venv
-venv\Scripts\activate  # On Windows
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 python run.py
 ```
 
-Backend will run on `http://localhost:5000`
+API runs at `http://localhost:5000`
 
-## API Endpoints
+### API Endpoints
 
-- `GET /health` - Health check endpoint
+- `GET /health` - Health check
 
-## Tech Stack
+## Project Structure
 
-- **Frontend:** React, TypeScript, Vite, TailwindCSS, shadcn/ui
-- **Backend:** Python, Flask
+```
+NAVIYA/
+├── frontend/              # React application
+│   ├── src/
+│   │   ├── components/    # UI components
+│   │   └── lib/          # Utilities
+│   └── tailwind.config.js
+│
+├── backend/              # Flask application
+│   ├── app/
+│   │   ├── __init__.py   # App factory
+│   │   ├── config.py     # Configuration
+│   │   └── routes.py     # API routes
+│   └── run.py           # Entry point
+│
+└── README.md
+```
