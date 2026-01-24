@@ -13,11 +13,22 @@ def create_app():
     # Setup logging
     setup_logging(app)
     
+    # Initialize orchestrator
+    from agents.orchestrator import Orchestrator
+    from agents.planner_agent import PlannerAgent
+    
+    orchestrator = Orchestrator()
+    orchestrator.register_agent(PlannerAgent())
+    
+    # Store orchestrator in app context
+    app.orchestrator = orchestrator
+    
     # Import and register routes
     from app.routes import register_routes
     register_routes(app)
     
     app.logger.info(f"App started in {app.config['FLASK_ENV']} mode")
+    app.logger.info(f"Registered agents: {orchestrator.list_agents()}")
     
     return app
 
