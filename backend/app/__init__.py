@@ -16,9 +16,11 @@ def create_app():
     # Initialize orchestrator
     from agents.orchestrator import Orchestrator
     from agents.planner_agent import PlannerAgent
+    from agents.timeline_predictor import TimelinePredictor
     
     orchestrator = Orchestrator()
     orchestrator.register_agent(PlannerAgent())
+    orchestrator.register_agent(TimelinePredictor())
     
     # Store orchestrator in app context
     app.orchestrator = orchestrator

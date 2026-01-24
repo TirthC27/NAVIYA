@@ -38,12 +38,28 @@ def trace_agent_execution(func: Callable) -> Callable:
                 # Calculate latency
                 latency_ms = (time.time() - start_time) * 1000
                 
+                # Extract ETA if available in result
+                eta_days = None
+                if isinstance(result, dict):
+                    eta_days = result.get('eta_days')
+                    # Also check nested result
+                    if eta_days is None and 'result' in result:
+                        nested_result = result['result']
+                        if isinstance(nested_result, dict):
+                            eta_days = nested_result.get('eta_days')
+                
                 # Update trace with output and metadata
                 trace.output = result
-                trace.metadata.update({
+                metadata_update = {
                     "latency_ms": latency_ms,
                     "status": "success"
-                })
+                }
+                
+                # Add ETA to metadata if available
+                if eta_days is not None:
+                    metadata_update["eta_days"] = eta_days
+                
+                trace.metadata.update(metadata_update)
                 
                 return result
                 

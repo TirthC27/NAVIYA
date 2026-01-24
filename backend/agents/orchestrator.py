@@ -66,20 +66,36 @@ class Orchestrator:
         # Calculate execution time
         execution_time_ms = (time.time() - start_time) * 1000
         
-        # Track execution in session
-        self.sessions[session_id]['history'].append({
+        # Extract ETA if this is timeline_predictor
+        eta_days = None
+        if agent_name == 'timeline_predictor' and isinstance(result, dict):
+            eta_days = result.get('eta_days')
+        
+        # Track execution in session with ETA metadata
+        execution_record = {
             'agent': agent_name,
             'input': input_data,
             'output': result,
             'execution_time_ms': execution_time_ms
-        })
+        }
         
-        return {
+        if eta_days is not None:
+            execution_record['eta_days'] = eta_days
+        
+        self.sessions[session_id]['history'].append(execution_record)
+        
+        # Build response
+        response = {
             'session_id': session_id,
             'agent': agent_name,
             'result': result,
             'execution_time_ms': execution_time_ms
         }
+        
+        if eta_days is not None:
+            response['eta_days'] = eta_days
+        
+        return response
     
     def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Get session data by ID"""
