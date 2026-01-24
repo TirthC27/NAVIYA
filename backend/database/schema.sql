@@ -24,3 +24,27 @@ WITH CHECK (true);
 -- Create index on created_at for faster queries
 CREATE INDEX IF NOT EXISTS idx_learning_sessions_created_at 
 ON learning_sessions(created_at DESC);
+
+-- Create transcripts table
+-- Stores raw YouTube transcripts without processing
+
+CREATE TABLE IF NOT EXISTS transcripts (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    video_id TEXT NOT NULL UNIQUE,
+    raw_text TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE transcripts ENABLE ROW LEVEL SECURITY;
+
+-- Create policy to allow all operations for now
+CREATE POLICY "Allow all operations on transcripts" 
+ON transcripts 
+FOR ALL 
+USING (true) 
+WITH CHECK (true);
+
+-- Create index on video_id for fast lookups
+CREATE INDEX IF NOT EXISTS idx_transcripts_video_id 
+ON transcripts(video_id);

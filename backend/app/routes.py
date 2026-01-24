@@ -1,5 +1,7 @@
 from flask import jsonify, request, current_app
 from app.supabase_client import get_supabase_client
+from data_ingestion.youtube_loader import load_youtube_transcript, TranscriptError
+from data_ingestion.transcript_storage import save_transcript, get_transcript, TranscriptStorageError
 from datetime import datetime
 import uuid
 
@@ -121,3 +123,62 @@ def register_routes(app):
         except Exception as e:
             app.logger.error(f"Error creating session: {str(e)}")
             return jsonify({"error": "Failed to create session"}), 500
+    
+    @app.route('/transcripts/load', methods=['POST'])
+    def load_transcript():
+        """Load a YouTube transcript and save to Supabase"""
+        try:
+            data = request.get_json()
+            if not data or 'video_id' not in data:
+                return jsonify({"error": "video_id is required"}), 400
+            
+            video_id = data['video_id']
+            
+            # Check if transcript already exists
+            existing = get_transcript(video_id)
+            if existing:
+                return jsonify({
+                    "message": "Transcript already exists",
+                    "transcript": existing
+                }), 200
+            
+            # Fetch and clean transcript
+            try:
+                cleaned_text = load_youtube_transcript(video_id)
+            except TranscriptError as e:
+                app.logger.warning(f"Transcript fetch failed: {str(e)}")
+                return jsonify({"error": str(e)}), 404
+            
+            # Save to Supabase
+            try:
+                transcript_data = save_transcript(video_id, cleaned_text)
+                return jsonify({
+                    "message": "Transcript loaded successfully",
+                    "transcript": transcript_data
+                }), 201
+            except TranscriptStorageError as e:
+                app.logger.error(f"Storage error: {str(e)}")
+                return jsonify({"error": str(e)}), 400
+            
+        except Exception as e:
+            app.logger.error(f"Unexpected error loading transcript: {str(e)}")
+            return jsonify({"error": "Failed to load transcript"}), 500
+    
+    @app.route('/transcripts/<video_id>', methods=['GET'])
+    def fetch_transcript(video_id):
+        """Retrieve a transcript by video_id"""
+        try:
+            transcript = get_transcript(video_id)
+            
+            if not transcript:
+                return jsonify({"error": "Transcript not found"}), 404
+            
+            return jsonify(transcript), 200
+            
+        except TranscriptStorageError as e:
+            app.logger.error(f"Error fetching transcript: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+        except Exception as e:
+            app.logger.error(f"Unexpected error: {str(e)}")
+            return jsonify({"error": "Failed to fetch transcript"}), 500
+
