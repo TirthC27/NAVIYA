@@ -1,10 +1,13 @@
 import './App.css'
+import { Layout } from './components/Layout'
 
 function App() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <h1 className="text-4xl font-bold text-gray-900">Learning Agent System</h1>
-    </div>
+    <Layout>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <h1 className="text-4xl font-bold">Learning Agent System</h1>
+      </div>
+    </Layout>
   )
 }
 
