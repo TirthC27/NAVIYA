@@ -10,110 +10,225 @@ const api = axios.create({
   },
 });
 
+// ============================================
+// Learning Plan API
+// ============================================
+
 /**
- * Generate a progressive learning plan for a topic
- * @param {string} userTopic - The topic to learn
- * @param {number} depthLevel - Current depth level (1, 2, or 3)
- * @param {Array} previousSteps - Previously completed steps
- * @returns {Promise} - Learning plan data with single video per step
+ * Get clarification questions for a topic
  */
-export const generateLearningPlan = async (userTopic, depthLevel = 1, previousSteps = []) => {
-  try {
-    const response = await api.post('/generate-learning-plan', {
-      user_topic: userTopic,
-      depth_level: depthLevel,
-      previous_steps: previousSteps,
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error generating learning plan:', error);
-    throw error;
-  }
+export const getClarificationQuestions = async (topic) => {
+  const response = await api.post('/api/clarify', { user_topic: topic });
+  return response.data;
 };
 
 /**
- * Mark a learning step as completed
- * @param {string} planId - The plan ID
- * @param {number} stepNumber - The step number to mark complete
- * @param {string} userId - Optional user ID
- * @returns {Promise} - Completion response with progress info
+ * Get available learning modes
  */
-export const completeStep = async (planId, stepNumber, userId = 'anonymous') => {
-  try {
-    const response = await api.post('/step/complete', {
-      plan_id: planId,
-      step_number: stepNumber,
-      user_id: userId,
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error completing step:', error);
-    throw error;
-  }
+export const getLearningModes = async () => {
+  const response = await api.get('/api/learning-modes');
+  return response.data;
 };
 
 /**
- * Generate a deeper roadmap after completing current level
- * @param {string} userTopic - The original topic
- * @param {Array} completedSteps - All completed step titles
- * @param {number} currentDepth - Current depth level
- * @returns {Promise} - Next level learning plan
+ * Generate a learning plan
  */
-export const deepenRoadmap = async (userTopic, completedSteps, currentDepth) => {
-  try {
-    const response = await api.post('/roadmap/deepen', {
-      user_topic: userTopic,
-      completed_steps: completedSteps,
-      current_depth: currentDepth,
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error deepening roadmap:', error);
-    throw error;
-  }
+export const generateLearningPlan = async (
+  userTopic, 
+  learningMode = 'standard',
+  depthLevel = 1, 
+  previousSteps = [],
+  enableEvaluation = true
+) => {
+  const response = await api.post('/generate-learning-plan', {
+    user_topic: userTopic,
+    learning_mode: learningMode,
+    depth_level: depthLevel,
+    previous_steps: previousSteps,
+    enable_evaluation: enableEvaluation
+  });
+  return response.data;
 };
 
 /**
- * Save a learning plan to database
- * @param {object} planData - The plan data to save
- * @returns {Promise} - Saved plan response
+ * Create a new plan in database
  */
-export const saveLearningPlan = async (planData) => {
-  try {
-    const response = await api.post('/api/plans/save', planData);
-    return response.data;
-  } catch (error) {
-    console.error('Error saving learning plan:', error);
-    throw error;
-  }
+export const createPlan = async (userId, topic, learningMode = 'standard', difficulty = 'medium') => {
+  const response = await api.post('/api/plans/create', {
+    user_id: userId,
+    topic,
+    learning_mode: learningMode,
+    difficulty
+  });
+  return response.data;
 };
 
 /**
- * Get all saved learning plans
- * @returns {Promise} - List of plans
+ * Add steps to a plan
  */
-export const getSavedPlans = async () => {
-  try {
-    const response = await api.get('/api/plans');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching plans:', error);
-    throw error;
-  }
+export const addStepsToPlan = async (planId, depthLevel, steps) => {
+  const response = await api.post(`/api/plans/${planId}/steps/add`, {
+    depth_level: depthLevel,
+    steps
+  });
+  return response.data;
 };
+
+/**
+ * Get a learning plan by ID
+ */
+export const getPlan = async (planId, userId = null) => {
+  const params = userId ? `?user_id=${userId}` : '';
+  const response = await api.get(`/api/plans/${planId}${params}`);
+  return response.data;
+};
+
+/**
+ * Get user's plans
+ */
+export const getUserPlans = async (userId = 'anonymous', limit = 10) => {
+  const response = await api.get(`/api/plans/user/${userId}?limit=${limit}`);
+  return response.data;
+};
+
+/**
+ * Mark a step as completed
+ */
+export const completeStep = async (stepId, userId = null, watchTimeSeconds = 0) => {
+  const response = await api.post(`/api/plans/steps/${stepId}/complete`, {
+    user_id: userId,
+    watch_time_seconds: watchTimeSeconds
+  });
+  return response.data;
+};
+
+/**
+ * Generate deeper roadmap
+ */
+export const deepenRoadmap = async (userTopic, completedSteps, currentDepth, learningMode = 'standard') => {
+  const response = await api.post('/roadmap/deepen', {
+    user_topic: userTopic,
+    completed_steps: completedSteps,
+    current_depth: currentDepth,
+    learning_mode: learningMode
+  });
+  return response.data;
+};
+
+// ============================================
+// Feedback API
+// ============================================
+
+/**
+ * Submit video feedback
+ */
+export const submitFeedback = async (videoId, rating, userId = null, comment = null) => {
+  const response = await api.post(`/api/plans/videos/${videoId}/feedback`, {
+    user_id: userId,
+    rating,
+    comment
+  });
+  return response.data;
+};
+
+/**
+ * Get video feedback
+ */
+export const getVideoFeedback = async (videoId) => {
+  const response = await api.get(`/api/plans/videos/${videoId}/feedback`);
+  return response.data;
+};
+
+// ============================================
+// Metrics & Observability API
+// ============================================
+
+/**
+ * Get metrics summary
+ */
+export const getMetricsSummary = async () => {
+  const response = await api.get('/api/metrics/summary');
+  return response.data;
+};
+
+/**
+ * Get full dashboard data
+ */
+export const getDashboard = async () => {
+  const response = await api.get('/api/metrics/dashboard');
+  return response.data;
+};
+
+/**
+ * Get evaluation runs
+ */
+export const getEvalRuns = async (planId = null, limit = 50) => {
+  const params = planId ? `?plan_id=${planId}&limit=${limit}` : `?limit=${limit}`;
+  const response = await api.get(`/api/metrics/evals${params}`);
+  return response.data;
+};
+
+/**
+ * Get all feedback
+ */
+export const getAllFeedback = async (limit = 100) => {
+  const response = await api.get(`/api/metrics/feedback?limit=${limit}`);
+  return response.data;
+};
+
+/**
+ * Get prompt versions
+ */
+export const getPromptVersions = async (promptName = null) => {
+  const params = promptName ? `?prompt_name=${promptName}` : '';
+  const response = await api.get(`/api/metrics/prompts${params}`);
+  return response.data;
+};
+
+// ============================================
+// Safety API
+// ============================================
+
+/**
+ * Check content safety
+ */
+export const checkSafety = async (content, checkType = 'all') => {
+  const response = await api.post('/api/safety/check', {
+    content,
+    check_type: checkType
+  });
+  return response.data;
+};
+
+/**
+ * Get safety metrics
+ */
+export const getSafetyMetrics = async () => {
+  const response = await api.get('/api/safety/metrics');
+  return response.data;
+};
+
+// ============================================
+// Health & Utility
+// ============================================
 
 /**
  * Health check
- * @returns {Promise} - Health status
  */
 export const healthCheck = async () => {
-  try {
-    const response = await api.get('/health');
-    return response.data;
-  } catch (error) {
-    console.error('Error checking health:', error);
-    throw error;
-  }
+  const response = await api.get('/health');
+  return response.data;
+};
+
+/**
+ * LLM generate (direct)
+ */
+export const llmGenerate = async (prompt, systemPrompt = null) => {
+  const response = await api.post('/api/llm/generate', {
+    prompt,
+    system_prompt: systemPrompt
+  });
+  return response.data;
 };
 
 export default api;

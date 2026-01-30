@@ -26,9 +26,14 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
     
+    # OPIK Observability Configuration
+    OPIK_API_KEY: str = os.getenv("OPIK_API_KEY", "ARtXGDhLbJmFIP4VaT0XT14n5")
+    OPIK_WORKSPACE: str = os.getenv("OPIK_WORKSPACE", "tirthc27")
+    OPIK_PROJECT: str = os.getenv("OPIK_PROJECT", "Naviya")
+    
     # Application Settings
     APP_NAME: str = "LearnTube AI"
-    APP_VERSION: str = "1.0.0"
+    APP_VERSION: str = "2.0.0"  # Upgraded with OPIK integration
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
     
     class Config:

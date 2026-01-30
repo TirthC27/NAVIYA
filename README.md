@@ -11,7 +11,7 @@ NAVIYA is built to provide a clean foundation for learning agent systems with pe
 ```
 ┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
 │   React App     │ ◄────► │   Flask API     │ ◄────► │   Supabase      │
-│  (TypeScript)   │  HTTP   │   (Python)      │  REST   │   (Postgres)    │
+│  (JavaScript)   │  HTTP   │   (Python)      │  REST   │   (Postgres)    │
 ├─────────────────┤         ├─────────────────┤         ├─────────────────┤
 │ • UI Components │         │ • Agent System  │         │ • Sessions DB   │
 │ • State Mgmt    │         │ • REST Routes   │         │ • Auth (future) │
@@ -23,11 +23,13 @@ NAVIYA is built to provide a clean foundation for learning agent systems with pe
 ## Tech Stack
 
 **Frontend**
-- React 18 with TypeScript
+- React 18 with JavaScript
 - Vite (build tool)
 - TailwindCSS (styling)
-- shadcn/ui (component library)
+- Radix UI (component library)
 - Supabase JS client
+- Axios for API calls
+- Framer Motion for animations
 
 **Backend**
 - Python 3.x
@@ -88,7 +90,7 @@ source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your Supabase and Opik credentials
-python run.py
+python -m app.main
 ```
 
 API runs at `http://localhost:5000`
@@ -96,7 +98,7 @@ API runs at `http://localhost:5000`
 ### Supabase Setup
 
 1. Create a Supabase project at https://supabase.com
-2. Run the SQL in `backend/database/schema.sql` in the Supabase SQL Editor
+2. Run the SQL in `backend/data/schema.sql` in the Supabase SQL Editor
 3. Copy your project URL and keys to `.env` files
 
 ## Project Structure
@@ -104,29 +106,40 @@ API runs at `http://localhost:5000`
 ```
 NAVIYA/
 ├── frontend/              # React application
+│   ├── public/
 │   ├── src/
 │   │   ├── components/    # UI components
-│   │   ├── lib/
-│   │   │   ├── utils.ts
-│   │   │   └── supabase.ts  # Supabase client
-│   │   └── App.tsx
-│   └── .env.example
+│   │   │   ├── home/      # Home page components
+│   │   │   ├── interests/ # Interests dashboard components
+│   │   │   ├── learning/  # Learning dashboard components
+│   │   │   ├── observability/ # Observability components
+│   │   │   └── roadmap/   # Roadmap components
+│   │   ├── pages/         # Page components
+│   │   ├── api/           # API utilities
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── index.css
+│   ├── package.json
+│   ├── vite.config.js
+│   └── tailwind.config.js
 │
-├── backend/              # Flask application
+├── backend/               # Flask application
 │   ├── app/
-│   │   ├── __init__.py      # App factory
-│   │   ├── config.py        # Configuration
-│   │   ├── routes.py        # API routes
-│   │   ├── tracing.py       # Opik middleware
-│   │   └── supabase_client.py  # Supabase client
-│   ├── agents/
-│   │   ├── base_agent.py    # Base class
-│   │   ├── orchestrator.py  # Agent coordinator
-│   │   └── planner_agent.py # Planner implementation
-│   ├── database/
-│   │   └── schema.sql       # Database schema
-│   ├── run.py
-│   └── .env.example
+│   │   ├── __init__.py    # App factory
+│   │   ├── config.py      # Configuration
+│   │   ├── main.py        # Main entry point
+│   │   ├── agents/        # Agent modules
+│   │   ├── db/            # Database modules
+│   │   ├── evals/         # Evaluation modules
+│   │   ├── observability/ # Observability modules
+│   │   ├── rag/           # RAG modules
+│   │   ├── routes/        # API routes
+│   │   ├── safety/        # Safety modules
+│   │   ├── schemas/       # Data schemas
+│   │   ├── utils/         # Utilities
+│   │   └── youtube/       # YouTube integration
+│   ├── data/              # Data files
+│   ├── requirements.txt
+│   └── start_server.bat  # Windows startup script
 │
 └── README.md
-```
