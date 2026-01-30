@@ -1,5 +1,17 @@
-Flask==3.1.0
-python-dotenv==1.0.1
-opik==1.9.98
-supabase==2.27.2
-youtube-transcript-api==0.6.2
+fastapi
+uvicorn[standard]
+python-dotenv
+httpx
+supabase
+langgraph
+langchain
+langchain-core
+langchain-community
+pydantic
+pydantic-settings
+
+# Dynamic RAG - Document Loading
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+pypdf>=3.0.0
+unstructured>=0.10.0

@@ -1,0 +1,101 @@
+{
+  "graph algorithms": {
+    "title": "Graph Algorithms",
+    "subtopics": [
+      "BFS (Breadth-First Search)",
+      "DFS (Depth-First Search)",
+      "Dijkstra's Algorithm",
+      "Minimum Spanning Tree (MST)",
+      "Topological Sort"
+    ]
+  },
+  "dynamic programming": {
+    "title": "Dynamic Programming",
+    "subtopics": [
+      "Introduction to DP",
+      "Memoization vs Tabulation",
+      "1D DP Problems",
+      "2D DP Problems",
+      "DP on Strings",
+      "DP on Trees"
+    ]
+  },
+  "sorting algorithms": {
+    "title": "Sorting Algorithms",
+    "subtopics": [
+      "Bubble Sort",
+      "Selection Sort",
+      "Insertion Sort",
+      "Merge Sort",
+      "Quick Sort",
+      "Heap Sort",
+      "Counting Sort",
+      "Radix Sort"
+    ]
+  },
+  "data structures": {
+    "title": "Data Structures",
+    "subtopics": [
+      "Arrays and Strings",
+      "Linked Lists",
+      "Stacks and Queues",
+      "Hash Tables",
+      "Trees and Binary Trees",
+      "Heaps",
+      "Graphs",
+      "Tries"
+    ]
+  },
+  "machine learning": {
+    "title": "Machine Learning",
+    "subtopics": [
+      "Introduction to ML",
+      "Linear Regression",
+      "Logistic Regression",
+      "Decision Trees",
+      "Random Forests",
+      "Support Vector Machines",
+      "Neural Networks Basics",
+      "Model Evaluation and Metrics"
+    ]
+  },
+  "python programming": {
+    "title": "Python Programming",
+    "subtopics": [
+      "Python Basics and Syntax",
+      "Data Types and Variables",
+      "Control Flow (if/else, loops)",
+      "Functions and Modules",
+      "Object-Oriented Programming",
+      "File Handling",
+      "Exception Handling",
+      "Libraries (NumPy, Pandas)"
+    ]
+  },
+  "web development": {
+    "title": "Web Development",
+    "subtopics": [
+      "HTML Fundamentals",
+      "CSS Styling and Layouts",
+      "JavaScript Basics",
+      "DOM Manipulation",
+      "React Fundamentals",
+      "REST APIs",
+      "Database Integration",
+      "Deployment"
+    ]
+  },
+  "system design": {
+    "title": "System Design",
+    "subtopics": [
+      "Scalability Basics",
+      "Load Balancing",
+      "Caching Strategies",
+      "Database Sharding",
+      "Message Queues",
+      "Microservices Architecture",
+      "API Design",
+      "CAP Theorem"
+    ]
+  }
+}

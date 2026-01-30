@@ -1,41 +1,71 @@
+"""
+LearnTube AI - Configuration Module
+Loads environment variables using python-dotenv
+"""
+
 import os
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings
+from typing import Optional
 
+# Load environment variables from .env file
 load_dotenv()
 
 
-class Config:
-    """Base configuration"""
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-    FLASK_ENV = os.environ.get('FLASK_ENV', 'development')
-    DEBUG = False
-    TESTING = False
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables"""
     
-    # Server settings
-    HOST = os.environ.get('HOST', '0.0.0.0')
-    PORT = int(os.environ.get('PORT', 5000))
+    # OpenRouter API Configuration
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "google/gemini-pro")
+    
+    # YouTube API Configuration
+    YOUTUBE_API_KEY: str = os.getenv("YOUTUBE_API_KEY", "")
+    
+    # Supabase Configuration
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
+    
+    # Application Settings
+    APP_NAME: str = "LearnTube AI"
+    APP_VERSION: str = "1.0.0"
+    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
 
 
-class DevelopmentConfig(Config):
-    """Development configuration"""
-    DEBUG = True
-    FLASK_ENV = 'development'
+# Create a global settings instance
+settings = Settings()
 
 
-class ProductionConfig(Config):
-    """Production configuration"""
-    DEBUG = False
-    FLASK_ENV = 'production'
+def get_settings() -> Settings:
+    """Returns the application settings instance"""
+    return settings
 
 
-config = {
-    'development': DevelopmentConfig,
-    'production': ProductionConfig,
-    'default': DevelopmentConfig
-}
-
-
-def get_config():
-    """Get configuration based on environment"""
-    env = os.environ.get('FLASK_ENV', 'development')
-    return config.get(env, config['default'])
+def validate_settings() -> dict:
+    """Validate that all required settings are configured"""
+    validation_result = {
+        "valid": True,
+        "missing": [],
+        "configured": []
+    }
+    
+    required_keys = [
+        "OPENROUTER_API_KEY",
+        "YOUTUBE_API_KEY", 
+        "SUPABASE_URL",
+        "SUPABASE_KEY"
+    ]
+    
+    for key in required_keys:
+        value = getattr(settings, key, "")
+        if not value or value == "":
+            validation_result["valid"] = False
+            validation_result["missing"].append(key)
+        else:
+            validation_result["configured"].append(key)
+    
+    return validation_result
