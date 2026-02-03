@@ -209,6 +209,54 @@ export const getSafetyMetrics = async () => {
 };
 
 // ============================================
+// Onboarding & Dashboard State
+// ============================================
+
+/**
+ * Get dashboard state for user (onboarding context + agent tasks)
+ */
+export const getDashboardState = async (userId) => {
+  const response = await api.get(`/api/onboarding/dashboard-state/${userId}`);
+  return response.data;
+};
+
+// ============================================
+// Mentor Messages API
+// ============================================
+
+/**
+ * Get mentor messages for a user
+ */
+export const getMentorMessages = async (userId, limit = 10) => {
+  const response = await api.get(`/api/mentor/messages/${userId}?limit=${limit}`);
+  return response.data;
+};
+
+/**
+ * Get latest mentor message for a user
+ */
+export const getLatestMentorMessage = async (userId) => {
+  const response = await api.get(`/api/mentor/messages/${userId}/latest`);
+  return response.data;
+};
+
+/**
+ * Mark mentor message as read
+ */
+export const markMentorMessageRead = async (messageId) => {
+  const response = await api.post(`/api/mentor/messages/${messageId}/read`);
+  return response.data;
+};
+
+/**
+ * Get unread message count for a user
+ */
+export const getUnreadMessageCount = async (userId) => {
+  const response = await api.get(`/api/mentor/messages/${userId}/unread-count`);
+  return response.data;
+};
+
+// ============================================
 // Health & Utility
 // ============================================
 
