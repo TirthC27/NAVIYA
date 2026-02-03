@@ -48,7 +48,15 @@ from app.evals.judges import evaluate_learning_plan as run_evaluation
 # Database Routes
 from app.routes.plans import router as plans_router
 from app.routes.metrics import router as metrics_router
-
+from app.routes.career import router as career_router
+from app.routes.auth import router as auth_router
+from app.routes.onboarding import router as onboarding_router
+from app.routes.agents import router as agents_router
+from app.routes.mentor import router as mentor_router
+from app.routes.resume import router as resume_router
+from app.routes.roadmap_api import router as roadmap_router
+from app.routes.skill_assessment_api import router as skill_assessment_router
+from app.routes.dashboard_state_api import router as dashboard_state_router
 
 # ============================================
 # Initialize FastAPI application
@@ -86,8 +94,17 @@ safety_guard = SafetyGuard(strict_mode=True)
 # ============================================
 # Include Routers (Supabase Database Endpoints)
 # ============================================
+app.include_router(auth_router, prefix="/api")
+app.include_router(onboarding_router, prefix="/api")
+app.include_router(agents_router, prefix="/api")
+app.include_router(mentor_router)  # Already has /api/mentor prefix
+app.include_router(resume_router)  # Already has /api/resume prefix
+app.include_router(roadmap_router)  # Already has /api/roadmap prefix
+app.include_router(skill_assessment_router, prefix="/api")  # /api/assessments
+app.include_router(dashboard_state_router, prefix="/api")  # /api/dashboard-state
 app.include_router(plans_router, prefix="/api")
 app.include_router(metrics_router, prefix="/api")
+app.include_router(career_router, prefix="/api")
 
 
 # ============================================
