@@ -59,7 +59,7 @@ const PromptBox = ({ onGenerate, learningModes = [], error }) => {
 
           {/* Learning Mode Selection */}
           <div className="mb-6">
-            <label className="text-sm text-gray-400 mb-3 block flex items-center gap-2">
+            <label className="text-sm text-gray-400 mb-3 flex items-center gap-2">
               <Clock className="w-4 h-4" />
               Learning Mode
             </label>
