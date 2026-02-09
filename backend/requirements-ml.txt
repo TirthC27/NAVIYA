@@ -1,0 +1,18 @@
+# ============================================
+# NAVIYA Backend - ML Dependencies (Heavy Install)
+# These are large and install separately for better caching
+# ============================================
+
+# PyTorch (CPU-only for faster Railway builds)
+# Using CPU version saves 2-3GB and 10+ minutes
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.2+cpu
+torchvision==0.16.2+cpu
+
+# Embeddings & Vector DB
+sentence-transformers==2.3.1
+chromadb==0.4.22
+
+# Document Intelligence (HEAVY - 500MB+ with all deps)
+# Only install if you actually use it
+unstructured[local-inference]==0.12.4

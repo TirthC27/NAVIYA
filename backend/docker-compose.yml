@@ -1,0 +1,29 @@
+# ============================================
+# NAVIYA Backend - Docker Compose Configuration
+# For local development with Docker
+# ============================================
+
+version: '3.8'
+
+services:
+  backend:
+    image: naviya-backend
+    container_name: naviya-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+# Usage:
+# 1. Build the image: docker build -t naviya-backend .
+# 2. Start with compose: docker-compose up
+# 3. Stop with: docker-compose down

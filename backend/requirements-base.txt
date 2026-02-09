@@ -1,0 +1,41 @@
+# ============================================
+# NAVIYA Backend - Base Dependencies (Fast Install)
+# These install quickly and change rarely
+# ============================================
+
+# Core Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+python-dotenv==1.0.1
+httpx>=0.26,<0.29
+
+
+# Database & Auth
+supabase>=2.3.4
+
+# LangChain Core (without heavy dependencies)
+langchain==0.1.6
+langchain-core==0.1.23
+langchain-community==0.0.20
+langgraph==0.0.20
+
+# Data Validation
+pydantic>=2.6.0,<3.0
+pydantic-settings>=2.6.0
+email-validator==2.1.0
+
+# Document Processing (Lightweight)
+python-docx==1.1.0
+PyMuPDF==1.23.26
+pdfplumber==0.10.3
+pypdf==4.0.1
+pytesseract==0.3.10
+Pillow==10.2.0
+python-magic==0.4.27
+
+# Observability
+opik>=1.0.0
+
+# Async utilities
+aiofiles==23.2.1

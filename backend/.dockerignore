@@ -1,0 +1,61 @@
+# Version control
+.git
+.gitignore
+
+# Environment files (secrets injected by Railway)
+.env
+.env.*
+
+# Virtual environments
+venv/
+ENV/
+.venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Tests (not needed in production image)
+test_*.py
+verify_*.py
+setup_database.py
+
+# Windows scripts
+*.bat
+
+# Documentation
+*.md
+LICENSE
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Data files (can be large and slow down builds)
+data/documents/
+data/chromadb/
+*.db
+*.sqlite
+
+# Large binary files
+*.pdf
+*.docx
+*.pptx
+*.mp4
+*.avi
+
+# Node modules (if any)
+node_modules/
+
+# Logs
+*.log
+logs/
