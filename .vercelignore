@@ -1,0 +1,15 @@
+backend/
+node_modules/
+.git/
+.vscode/
+.idea/
+*.log
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.pytest_cache/
+venv/
+*.md
+!README.md
