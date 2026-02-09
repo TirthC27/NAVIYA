@@ -1,0 +1,51 @@
+{
+  "domain": "tech",
+  "label": "Technology",
+  "description": "Rules for software engineering, DevOps, and IT scenarios",
+  "rules": [
+    {
+      "id": "logs_over_assumptions",
+      "label": "Check logs before assuming causes",
+      "weight": 2.0,
+      "category": "decision_quality"
+    },
+    {
+      "id": "no_restart_before_diagnosis",
+      "label": "Don't restart systems before diagnosing",
+      "weight": 1.5,
+      "category": "risk_awareness"
+    },
+    {
+      "id": "rollback_over_hotfix",
+      "label": "Prefer rollback over untested hotfix",
+      "weight": 1.5,
+      "category": "risk_awareness"
+    },
+    {
+      "id": "user_impact_first",
+      "label": "Minimize user impact above all",
+      "weight": 2.0,
+      "category": "ethical_reasoning"
+    },
+    {
+      "id": "test_before_deploy",
+      "label": "Test changes before pushing to production",
+      "weight": 1.5,
+      "category": "decision_quality"
+    },
+    {
+      "id": "backup_before_change",
+      "label": "Create backups before making destructive changes",
+      "weight": 2.0,
+      "category": "risk_awareness"
+    }
+  ],
+  "skills": [
+    "Incident Response",
+    "System Design Decisions",
+    "Code Review Judgment",
+    "Production Debugging",
+    "Security Threat Response",
+    "Technical Leadership"
+  ]
+}

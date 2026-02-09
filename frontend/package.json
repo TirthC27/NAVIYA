@@ -17,11 +17,14 @@
     "@xyflow/react": "^12.10.0",
     "axios": "^1.6.0",
     "canvas-confetti": "^1.9.4",
+    "dagre": "^0.8.5",
     "framer-motion": "^12.29.2",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-force-graph-2d": "^1.29.1",
     "react-router-dom": "^6.20.0",
+    "reactflow": "^11.11.4",
     "recharts": "^3.7.0"
   },
   "devDependencies": {

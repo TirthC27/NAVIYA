@@ -1,0 +1,51 @@
+{
+  "domain": "law",
+  "label": "Law",
+  "description": "Rules for legal practice, compliance, and ethical judgment scenarios",
+  "rules": [
+    {
+      "id": "evidence_integrity",
+      "label": "Never tamper with or hide evidence",
+      "weight": 3.0,
+      "category": "ethical_reasoning"
+    },
+    {
+      "id": "court_duty",
+      "label": "Duty to the court overrides client wishes",
+      "weight": 2.5,
+      "category": "ethical_reasoning"
+    },
+    {
+      "id": "client_confidentiality",
+      "label": "Protect client confidentiality unless legally required to disclose",
+      "weight": 2.0,
+      "category": "risk_awareness"
+    },
+    {
+      "id": "due_diligence",
+      "label": "Complete due diligence before advising",
+      "weight": 2.0,
+      "category": "decision_quality"
+    },
+    {
+      "id": "conflict_check",
+      "label": "Check for conflicts of interest immediately",
+      "weight": 2.0,
+      "category": "risk_awareness"
+    },
+    {
+      "id": "proportional_response",
+      "label": "Response should be proportional to the issue",
+      "weight": 1.5,
+      "category": "decision_quality"
+    }
+  ],
+  "skills": [
+    "Ethical Judgment",
+    "Client Advisory",
+    "Compliance Decision Making",
+    "Courtroom Strategy",
+    "Risk Assessment",
+    "Conflict Resolution"
+  ]
+}

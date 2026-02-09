@@ -1,0 +1,62 @@
+{
+  "version": "1.0",
+  "description": "Universal thinking rules applied to all domains",
+  "rules": [
+    {
+      "id": "assess_before_act",
+      "label": "Assess the situation before taking action",
+      "description": "Gather information and understand the problem before jumping to solutions",
+      "weight": 2.0,
+      "category": "decision_quality"
+    },
+    {
+      "id": "communicate_early",
+      "label": "Communicate with stakeholders early",
+      "description": "Inform relevant people before making significant decisions",
+      "weight": 1.5,
+      "category": "communication"
+    },
+    {
+      "id": "avoid_irreversible",
+      "label": "Avoid irreversible actions without sufficient data",
+      "description": "Prefer reversible or low-risk actions when uncertain",
+      "weight": 2.0,
+      "category": "risk_awareness"
+    },
+    {
+      "id": "ethics_over_speed",
+      "label": "Ethics and safety over speed",
+      "description": "Never compromise ethical standards for faster results",
+      "weight": 2.5,
+      "category": "ethical_reasoning"
+    },
+    {
+      "id": "escalate_when_unsure",
+      "label": "Escalate when beyond your expertise",
+      "description": "Recognize limits and involve appropriate experts",
+      "weight": 1.5,
+      "category": "decision_quality"
+    },
+    {
+      "id": "document_decisions",
+      "label": "Document your reasoning",
+      "description": "Keep record of why decisions were made for accountability",
+      "weight": 1.0,
+      "category": "communication"
+    },
+    {
+      "id": "consider_impact",
+      "label": "Consider downstream impact",
+      "description": "Think about who else is affected by your actions",
+      "weight": 1.5,
+      "category": "risk_awareness"
+    },
+    {
+      "id": "prioritize_safety",
+      "label": "Prioritize human safety",
+      "description": "Human safety and wellbeing always comes first",
+      "weight": 2.5,
+      "category": "ethical_reasoning"
+    }
+  ]
+}

@@ -89,7 +89,7 @@ const Observability = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -97,12 +97,12 @@ const Observability = () => {
         className="flex items-center justify-between mb-8"
       >
         <div>
-          <h1 className="text-2xl font-semibold text-slate-800">Observability</h1>
-          <p className="text-slate-500 mt-1">OPIK metrics, traces & agent performance</p>
+          <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">Observability</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">OPIK metrics, traces & agent performance</p>
         </div>
         <button
           onClick={handleRefresh}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           Refresh
@@ -116,7 +116,7 @@ const Observability = () => {
         transition={{ delay: 0.1 }}
         className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"
       >
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 transition-colors">
           <div className="flex items-center justify-between mb-3">
             <Activity className="w-5 h-5 text-purple-500" />
             <span className="text-xs text-green-500 flex items-center gap-1">
@@ -124,11 +124,11 @@ const Observability = () => {
               +12%
             </span>
           </div>
-          <p className="text-2xl font-bold text-slate-800">{mockMetrics.totalTraces.toLocaleString()}</p>
-          <p className="text-sm text-slate-500">Total Traces</p>
+          <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{mockMetrics.totalTraces.toLocaleString()}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Total Traces</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 transition-colors">
           <div className="flex items-center justify-between mb-3">
             <Clock className="w-5 h-5 text-blue-500" />
             <span className="text-xs text-green-500 flex items-center gap-1">
@@ -136,25 +136,25 @@ const Observability = () => {
               -8%
             </span>
           </div>
-          <p className="text-2xl font-bold text-slate-800">{mockMetrics.avgLatency}ms</p>
-          <p className="text-sm text-slate-500">Avg Latency</p>
+          <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{mockMetrics.avgLatency}ms</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Avg Latency</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 transition-colors">
           <div className="flex items-center justify-between mb-3">
             <CheckCircle className="w-5 h-5 text-green-500" />
           </div>
-          <p className="text-2xl font-bold text-slate-800">{mockMetrics.successRate}%</p>
-          <p className="text-sm text-slate-500">Success Rate</p>
+          <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{mockMetrics.successRate}%</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Success Rate</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 transition-colors">
           <div className="flex items-center justify-between mb-3">
             <Zap className="w-5 h-5 text-amber-500" />
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           </div>
-          <p className="text-2xl font-bold text-slate-800">{mockMetrics.activeAgents}</p>
-          <p className="text-sm text-slate-500">Active Agents</p>
+          <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{mockMetrics.activeAgents}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Active Agents</p>
         </div>
       </motion.div>
 
@@ -167,13 +167,13 @@ const Observability = () => {
           transition={{ delay: 0.2 }}
           className="lg:col-span-2"
         >
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 transition-colors">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                <Eye className="w-4 h-4 text-slate-500" />
+              <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 Recent Traces
               </h3>
-              <span className="text-xs text-slate-500">Live</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Live</span>
             </div>
 
             <div className="space-y-3">
@@ -183,7 +183,7 @@ const Observability = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="flex items-center gap-4 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+                  className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 >
                   <div className={`w-2 h-2 rounded-full ${
                     trace.status === 'success' ? 'bg-green-500' : 'bg-amber-500'
@@ -191,16 +191,16 @@ const Observability = () => {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-slate-800 text-sm">{trace.agent}</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-200 text-sm">{trace.agent}</span>
                       <span className="text-slate-400">→</span>
-                      <span className="text-slate-600 text-sm">{trace.action}</span>
+                      <span className="text-slate-600 dark:text-slate-300 text-sm">{trace.action}</span>
                     </div>
                     <span className="text-xs text-slate-400">{trace.timestamp}</span>
                   </div>
                   
                   <div className="text-right">
                     <span className={`text-sm font-mono ${
-                      trace.duration > 1000 ? 'text-yellow-600' : 'text-slate-600'
+                      trace.duration > 1000 ? 'text-yellow-600 dark:text-yellow-400' : 'text-slate-600 dark:text-slate-300'
                     }`}>
                       {trace.duration}ms
                     </span>
@@ -219,32 +219,32 @@ const Observability = () => {
           className="space-y-6"
         >
           {/* Safety Metrics */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 transition-colors">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">
               <Shield className="w-4 h-4 text-green-500" />
               Safety Guardrails
             </h3>
             
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">PII Detected</span>
-                <span className="font-medium text-slate-800">{mockSafetyMetrics.piiDetected}</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300">PII Detected</span>
+                <span className="font-medium text-slate-800 dark:text-slate-100">{mockSafetyMetrics.piiDetected}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">PII Blocked</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300">PII Blocked</span>
                 <span className="font-medium text-green-600">{mockSafetyMetrics.piiBlocked}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Content Filtered</span>
-                <span className="font-medium text-slate-800">{mockSafetyMetrics.contentFiltered}</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300">Content Filtered</span>
+                <span className="font-medium text-slate-800 dark:text-slate-100">{mockSafetyMetrics.contentFiltered}</span>
               </div>
               
-              <div className="pt-3 border-t border-slate-100">
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-600">Safety Score</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-300">Safety Score</span>
                   <span className="font-bold text-green-600">{mockSafetyMetrics.safetyScore}%</span>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-green-500 rounded-full"
                     style={{ width: `${mockSafetyMetrics.safetyScore}%` }}
@@ -255,8 +255,8 @@ const Observability = () => {
           </div>
 
           {/* Agent Performance */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 transition-colors">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">
               <BarChart3 className="w-4 h-4 text-purple-500" />
               Agent Performance
             </h3>
@@ -266,12 +266,12 @@ const Observability = () => {
                 <div key={agent.agent} className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-amber-500" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-700 truncate">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
                       {agent.agent.replace('Agent', '')}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-slate-500">{agent.calls} calls</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{agent.calls} calls</p>
                     <p className="text-xs text-green-600">{agent.successRate}%</p>
                   </div>
                 </div>

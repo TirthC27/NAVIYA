@@ -77,6 +77,14 @@ export function DashboardStateProvider({ children, userId }) {
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
 
+  // Reset state when user switches (prevents stale cross-user data)
+  useEffect(() => {
+    setState(null);
+    setLoading(true);
+    setError(null);
+    setLastUpdate(null);
+  }, [userId]);
+
   // Fetch dashboard state from API
   const fetchState = useCallback(async () => {
     if (!userId) {
@@ -86,24 +94,30 @@ export function DashboardStateProvider({ children, userId }) {
 
     try {
       setError(null);
+      console.log('[DashboardState] Fetching state for:', userId);
       const response = await fetch(`${API_BASE}/api/dashboard-state/${userId}`);
       
       if (!response.ok) {
+        console.error('[DashboardState] API error:', response.status);
         throw new Error(`Failed to fetch dashboard state: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log('[DashboardState] Received:', data);
       
-      if (data.success) {
+      if (data.success && data.state) {
+        console.log('[DashboardState] Setting state, resume_ready:', data.state.resume_ready);
         setState(data.state);
         setLastUpdate(new Date().toISOString());
       } else {
+        console.warn('[DashboardState] No state found, using default');
         setState({ ...DEFAULT_STATE, user_id: userId });
       }
     } catch (err) {
-      console.error('Error fetching dashboard state:', err);
+      console.error('[DashboardState] Error fetching:', err);
       setError(err.message);
-      setState({ ...DEFAULT_STATE, user_id: userId });
+      // Don't override if we already have state loaded
+      setState(prev => prev || { ...DEFAULT_STATE, user_id: userId });
     } finally {
       setLoading(false);
     }

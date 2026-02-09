@@ -1,0 +1,51 @@
+{
+  "domain": "business",
+  "label": "Business",
+  "description": "Rules for business strategy, management, and operations scenarios",
+  "rules": [
+    {
+      "id": "data_driven_decisions",
+      "label": "Use data to support decisions, not gut feeling",
+      "weight": 2.0,
+      "category": "decision_quality"
+    },
+    {
+      "id": "stakeholder_alignment",
+      "label": "Align stakeholders before major changes",
+      "weight": 1.5,
+      "category": "communication"
+    },
+    {
+      "id": "revenue_vs_ethics",
+      "label": "Don't chase revenue at the cost of ethics",
+      "weight": 2.0,
+      "category": "ethical_reasoning"
+    },
+    {
+      "id": "risk_mitigation_plan",
+      "label": "Always have a contingency plan",
+      "weight": 1.5,
+      "category": "risk_awareness"
+    },
+    {
+      "id": "team_impact",
+      "label": "Consider team morale and burnout in decisions",
+      "weight": 1.5,
+      "category": "ethical_reasoning"
+    },
+    {
+      "id": "customer_first",
+      "label": "Customer trust over short-term gains",
+      "weight": 2.0,
+      "category": "decision_quality"
+    }
+  ],
+  "skills": [
+    "Strategic Decision Making",
+    "Crisis Management",
+    "Team Leadership",
+    "Resource Allocation",
+    "Stakeholder Communication",
+    "Ethical Business Decisions"
+  ]
+}

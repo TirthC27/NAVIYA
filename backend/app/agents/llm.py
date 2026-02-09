@@ -33,8 +33,8 @@ async def call_gemini(prompt: str, system_prompt: Optional[str] = None) -> str:
     headers = {
         "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://learntube.ai",
-        "X-Title": "LearnTube AI"
+        "HTTP-Referer": "https://resume-ai-agent-parser.local",
+        "X-Title": "Resume AI Agent Parser"
     }
     
     messages = []
@@ -52,7 +52,9 @@ async def call_gemini(prompt: str, system_prompt: Optional[str] = None) -> str:
     
     payload = {
         "model": settings.GEMINI_MODEL,
-        "messages": messages
+        "messages": messages,
+        "temperature": 0.1,
+        "max_tokens": 8000
     }
     
     try:
@@ -99,8 +101,8 @@ def call_gemini_sync(prompt: str, system_prompt: Optional[str] = None) -> str:
     headers = {
         "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://learntube.ai",
-        "X-Title": "LearnTube AI"
+        "HTTP-Referer": "https://resume-ai-agent-parser.local",
+        "X-Title": "Resume AI Agent Parser"
     }
     
     messages = []
@@ -118,7 +120,9 @@ def call_gemini_sync(prompt: str, system_prompt: Optional[str] = None) -> str:
     
     payload = {
         "model": settings.GEMINI_MODEL,
-        "messages": messages
+        "messages": messages,
+        "temperature": 0.1,
+        "max_tokens": 8000
     }
     
     try:

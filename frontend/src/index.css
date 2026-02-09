@@ -13,6 +13,13 @@ body {
   background-color: #f8fafc;
   color: #1e293b;
   line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark mode body */
+.dark body {
+  background-color: #0f172a;
+  color: #e2e8f0;
 }
 
 /* Light theme scrollbar - Google style */
@@ -34,10 +41,24 @@ body {
   background: #94a3b8;
 }
 
+/* Dark scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
 /* Firefox scrollbar */
 * {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f1f5f9;
+}
+.dark * {
+  scrollbar-color: #475569 #1e293b;
 }
 
 /* React Flow overrides */
@@ -58,6 +79,25 @@ body {
 .react-flow__controls-button:hover {
   background: #374151 !important;
   color: #fff !important;
+}
+
+.dark .react-flow__controls-button {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  color: #94a3b8 !important;
+}
+
+.dark .react-flow__controls-button:hover {
+  background: #475569 !important;
+  color: #fff !important;
+}
+
+.dark .react-flow__minimap {
+  background: #1e293b !important;
+}
+
+.dark .react-flow__background {
+  background: #0f172a !important;
 }
 
 /* Animation utilities */
@@ -114,6 +154,12 @@ body {
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   border: 1px solid #e2e8f0;
+}
+
+.dark .card {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .line-clamp-2 {

@@ -54,9 +54,16 @@ from app.routes.onboarding import router as onboarding_router
 from app.routes.agents import router as agents_router
 from app.routes.mentor import router as mentor_router
 from app.routes.resume import router as resume_router
+from app.routes.resume_simple import router as resume_simple_router
 from app.routes.roadmap_api import router as roadmap_router
 from app.routes.skill_assessment_api import router as skill_assessment_router
 from app.routes.dashboard_state_api import router as dashboard_state_router
+from app.routes.career_intelligence import router as career_intelligence_router
+from app.routes.skill_roadmap import router as skill_roadmap_router
+from app.routes.skill_assessment_scenario import router as skill_assessment_scenario_router
+from app.routes.activity import router as activity_router
+from app.routes.interview import router as interview_router
+from app.routes.topic_explainer import router as topic_explainer_router
 
 # ============================================
 # Initialize FastAPI application
@@ -99,12 +106,19 @@ app.include_router(onboarding_router, prefix="/api")
 app.include_router(agents_router, prefix="/api")
 app.include_router(mentor_router)  # Already has /api/mentor prefix
 app.include_router(resume_router)  # Already has /api/resume prefix
+app.include_router(resume_simple_router)  # Already has /api/resume-simple prefix
 app.include_router(roadmap_router)  # Already has /api/roadmap prefix
 app.include_router(skill_assessment_router, prefix="/api")  # /api/assessments
 app.include_router(dashboard_state_router, prefix="/api")  # /api/dashboard-state
 app.include_router(plans_router, prefix="/api")
 app.include_router(metrics_router, prefix="/api")
 app.include_router(career_router, prefix="/api")
+app.include_router(career_intelligence_router)  # Already has /api/career-intelligence prefix
+app.include_router(skill_roadmap_router)  # Already has /api/skill-roadmap prefix
+app.include_router(skill_assessment_scenario_router)  # Already has /api/skill-assessment prefix
+app.include_router(activity_router)  # Already has /api/activity prefix
+app.include_router(interview_router)  # Already has /api/interview prefix
+app.include_router(topic_explainer_router)  # Already has /api/topic-explainer prefix
 
 
 # ============================================

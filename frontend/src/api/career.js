@@ -208,6 +208,39 @@ export const getAvailableRoles = async () => {
   return response.data;
 };
 
+
+// ============================================
+// Scenario-Based Skill Assessment API
+// ============================================
+
+export const getAssessmentDomains = async () => {
+  const response = await api.get('/api/skill-assessment/domains');
+  return response.data;
+};
+
+export const startScenarioAssessment = async (userId, domain, skill) => {
+  const response = await api.post('/api/skill-assessment/start', {
+    user_id: userId, domain, skill
+  });
+  return response.data;
+};
+
+export const scoreScenarioActions = async (data) => {
+  const response = await api.post('/api/skill-assessment/score', data);
+  return response.data;
+};
+
+export const submitScenarioExplanation = async (data) => {
+  const response = await api.post('/api/skill-assessment/explain', data);
+  return response.data;
+};
+
+export const getScenarioHistory = async (userId) => {
+  const response = await api.get(`/api/skill-assessment/history/${userId}`);
+  return response.data;
+};
+
+
 export default {
   // Profile
   getCareerProfile,
@@ -250,5 +283,12 @@ export default {
   
   // Lists
   getAvailableSkills,
-  getAvailableRoles
+  getAvailableRoles,
+
+  // Scenario Assessment
+  getAssessmentDomains,
+  startScenarioAssessment,
+  scoreScenarioActions,
+  submitScenarioExplanation,
+  getScenarioHistory
 };

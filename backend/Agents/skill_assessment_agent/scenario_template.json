@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "description": "Template that the LLM must fill — it cannot invent rules",
+  "template": {
+    "scenario_id": "<generated>",
+    "domain": "<from request>",
+    "skill": "<from request>",
+    "context": "<LLM fills: 2-3 sentence situation description>",
+    "urgency": "<high | medium | low>",
+    "time_limit_seconds": 120,
+    "background_info": "<LLM fills: partial info the user sees initially>",
+    "hidden_info": "<LLM fills: info revealed only AFTER actions are taken>",
+    "available_actions": [
+      {
+        "id": "action_1",
+        "label": "<action description>",
+        "category": "<investigate | communicate | execute | escalate | defer>",
+        "risk_level": "<low | medium | high>",
+        "hidden_consequence": "<what happens if user picks this>"
+      }
+    ],
+    "optimal_order": ["action_X", "action_Y", "action_Z"],
+    "critical_actions": ["action_X"],
+    "rule_mappings": {
+      "action_1": {
+        "rules_followed": ["rule_id_1"],
+        "rules_violated": ["rule_id_2"]
+      }
+    }
+  }
+}

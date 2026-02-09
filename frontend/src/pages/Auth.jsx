@@ -58,6 +58,9 @@ const Auth = () => {
         localStorage.setItem('access_token', data.session.access_token);
         localStorage.setItem('refresh_token', data.session.refresh_token);
       }
+
+      // Notify App.jsx so DashboardStateProvider picks up the new user
+      window.dispatchEvent(new Event('auth-changed'));
       
       // Navigate based on login vs signup
       if (isLogin) {

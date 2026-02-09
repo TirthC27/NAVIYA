@@ -1,4 +1,8 @@
+import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
+// Theme
+import { ThemeProvider } from './context/ThemeContext';
 
 // Auth Pages
 import Welcome from './pages/Welcome';
@@ -17,15 +21,15 @@ import {
   CareerDashboard,
   CareerRoadmap,
   ResumeAnalysis,
+  YourCareer,
   SkillsAssessment,
   MockInterview,
-  AIMentor,
-  LearningRoadmaps,
+  AlumniNetwork,
   Observability
 } from './pages/career';
 
-// Get user ID for dashboard state
-const getUserId = () => {
+// Read user ID from localStorage
+const readUserId = () => {
   try {
     const userData = localStorage.getItem('user');
     if (userData) {
@@ -39,7 +43,27 @@ const getUserId = () => {
 };
 
 function App() {
+  // Reactive userId state — updates on login/logout so DashboardStateProvider
+  // always receives the current user's ID (fixes cross-user resume leak).
+  const [userId, setUserId] = useState(readUserId);
+
+  const refreshUserId = useCallback(() => {
+    setUserId(readUserId());
+  }, []);
+
+  useEffect(() => {
+    // Auth.jsx and CareerLayout.jsx dispatch this event on login / logout
+    window.addEventListener('auth-changed', refreshUserId);
+    // Also handle cross-tab changes
+    window.addEventListener('storage', refreshUserId);
+    return () => {
+      window.removeEventListener('auth-changed', refreshUserId);
+      window.removeEventListener('storage', refreshUserId);
+    };
+  }, [refreshUserId]);
+
   return (
+    <ThemeProvider>
     <Router>
       <Routes>
         {/* Public Routes - Redirect to dashboard if authenticated */}
@@ -70,7 +94,7 @@ function App() {
         {/* Protected Routes - Career Intelligence Module */}
         <Route path="/career" element={
           <ProtectedRoute>
-            <DashboardStateProvider userId={getUserId()}>
+            <DashboardStateProvider key={userId || 'no-user'} userId={userId}>
               <CareerLayout />
             </DashboardStateProvider>
           </ProtectedRoute>
@@ -79,10 +103,10 @@ function App() {
           <Route path="dashboard" element={<CareerDashboard />} />
           <Route path="roadmap" element={<CareerRoadmap />} />
           <Route path="resume" element={<ResumeAnalysis />} />
+          <Route path="your-career" element={<YourCareer />} />
           <Route path="skills" element={<SkillsAssessment />} />
           <Route path="interview" element={<MockInterview />} />
-          <Route path="mentor" element={<AIMentor />} />
-          <Route path="learning" element={<LearningRoadmaps />} />
+          <Route path="alumni" element={<AlumniNetwork />} />
           <Route path="observability" element={<Observability />} />
         </Route>
 
@@ -90,6 +114,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
+    </ThemeProvider>
   );
 }
 

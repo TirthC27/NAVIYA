@@ -43,6 +43,9 @@ const GlobalNav = () => {
       localStorage.removeItem('user');
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
+
+      // Notify App.jsx so DashboardStateProvider resets for the next user
+      window.dispatchEvent(new Event('auth-changed'));
       
       // Redirect to auth page
       navigate('/auth');
