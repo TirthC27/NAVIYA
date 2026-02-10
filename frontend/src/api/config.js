@@ -1,13 +1,27 @@
 /**
  * Centralized API configuration
  *
- * Uses VITE_API_BASE_URL from environment variables.
- * - Local dev:  set in .env            → http://localhost:8000
- * - Production: set in Vercel env vars → https://<your-render-service>.onrender.com
- *
- * IMPORTANT: Never hardcode production URLs here.
+ * VITE_API_BASE_URL MUST be set:
+ * - Local dev:  .env → http://localhost:8000
+ * - Production: Vercel env vars → https://<your-backend>.onrender.com
  */
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+const baseUrl = import.meta.env.VITE_API_BASE_URL;
+
+if (!baseUrl || baseUrl.trim() === '') {
+  throw new Error(
+    '❌ VITE_API_BASE_URL is not set.\n' +
+    'Set it in Vercel env vars (production) or .env (local dev).'
+  );
+}
+
+if (import.meta.env.PROD && baseUrl.includes('localhost')) {
+  throw new Error(
+    `❌ Production build cannot use localhost: ${baseUrl}`
+  );
+}
+
+export const API_BASE_URL = baseUrl;
 
 /**
  * Lightweight fetch wrapper that prepends the API base URL.
