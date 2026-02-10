@@ -57,7 +57,7 @@ class Settings:
         # CORS – comma-separated list of allowed frontend origins.
         # Example: "http://localhost:5173,https://naviya.vercel.app"
         # Falls back to localhost dev defaults if not set.
-        _cors_raw = _read_env_key("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
+        _cors_raw = _read_env_key("CORS_ORIGINS", "https://naviya-dun.vercel.app/auth")
         self.CORS_ORIGINS: list = [o.strip() for o in _cors_raw.split(",") if o.strip()]
 
 
