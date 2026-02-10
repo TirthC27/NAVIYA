@@ -7,7 +7,7 @@
  *
  * IMPORTANT: Never hardcode production URLs here.
  */
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://naviya-backend.onrender.com';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 /**
  * Lightweight fetch wrapper that prepends the API base URL.
