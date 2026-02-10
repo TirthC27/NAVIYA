@@ -32,8 +32,7 @@ import {
 import { useDashboardState } from '../../context/DashboardStateContext';
 import { useNavigate } from 'react-router-dom';
 import OpikEvalPopup from '../../components/observability/OpikEvalPopup';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { API_BASE_URL as API_BASE } from '../../api/config';
 
 // Category icon + color map
 const CATEGORY_CONFIG = {

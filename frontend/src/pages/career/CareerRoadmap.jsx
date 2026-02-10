@@ -21,8 +21,7 @@ import ReactFlow, {
 import OpikEvalPopup from '../../components/observability/OpikEvalPopup';
 import 'reactflow/dist/style.css';
 import useActivityTracker from '../../hooks/useActivityTracker';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { API_BASE_URL as API_BASE } from '../../api/config';
 
 // ============================================
 // Layout

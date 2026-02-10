@@ -26,8 +26,7 @@ import {
 import { useDashboardState } from '../../context/DashboardStateContext';
 import useActivityTracker from '../../hooks/useActivityTracker';
 import OpikEvalPopup from '../../components/observability/OpikEvalPopup';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { API_BASE_URL as API_BASE } from '../../api/config';
 
 // ─── Phase constants ────────────────────────────────────
 const PHASE = {

@@ -23,8 +23,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import useActivityTracker from '../../hooks/useActivityTracker';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { API_BASE_URL as API_BASE } from '../../api/config';
 
 // Slide icons by index
 const SLIDE_ICONS = [BookOpen, Lightbulb, Target, AlertTriangle, Rocket];

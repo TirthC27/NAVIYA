@@ -21,8 +21,7 @@ import {
   WeakAreasHighlight,
   RetakeCooldown 
 } from '../components/skills';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { API_BASE_URL as API_BASE } from '../api/config';
 
 const SkillAssessmentDashboard = () => {
   const [userId] = useState('user-001'); // Replace with actual user context

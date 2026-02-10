@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../api/config';
 import {
   Briefcase,
   LayoutDashboard,
@@ -102,7 +103,7 @@ const CareerLayout = () => {
   const handleLogout = async () => {
     try {
       // Call logout API
-      await fetch('http://localhost:8000/api/auth/logout', {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`

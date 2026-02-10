@@ -33,8 +33,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { useDashboardState } from '../../context/DashboardStateContext';
 import useActivityTracker from '../../hooks/useActivityTracker';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { API_BASE_URL as API_BASE } from '../../api/config';
 
 // ─── Helpers ────────────────────────────────────────────
 const getUserId = () => {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API_BASE_URL } from '../api/config';
 
 /**
  * Auth Guard Hook
@@ -44,7 +45,7 @@ export const useAuthGuard = () => {
 
       try {
         // Check onboarding status
-        const response = await fetch(`http://localhost:8000/api/onboarding/status?user_id=${user.id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/onboarding/status?user_id=${user.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -132,7 +133,7 @@ export const PublicRoute = ({ children }) => {
         const user = JSON.parse(userStr);
         
         try {
-          const response = await fetch(`http://localhost:8000/api/onboarding/status?user_id=${user.id}`, {
+          const response = await fetch(`${API_BASE_URL}/api/onboarding/status?user_id=${user.id}`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }

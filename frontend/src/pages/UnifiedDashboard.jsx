@@ -20,8 +20,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { useDashboardState, FeatureGate, DashboardStateLoader } from '../context/DashboardStateContext';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+import { API_BASE_URL as API_BASE } from '../api/config';
 
 // ============================================
 // Feature Card Components

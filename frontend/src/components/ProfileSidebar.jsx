@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { API_BASE_URL } from '../api/config';
 
 const ProfileSidebar = ({ userId }) => {
   const [resumeData, setResumeData] = useState(null);
@@ -15,7 +16,7 @@ const ProfileSidebar = ({ userId }) => {
 
   const fetchResumeData = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/resume-simple/data/${userId}`);
+      const response = await fetch(`${API_BASE_URL}/api/resume-simple/data/${userId}`);
       if (response.ok) {
         const data = await response.json();
         setResumeData(data);
@@ -47,7 +48,7 @@ const ProfileSidebar = ({ userId }) => {
     formData.append('user_id', userId);
 
     try {
-      const response = await fetch('http://localhost:8000/api/resume-simple/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/resume-simple/upload`, {
         method: 'POST',
         body: formData,
       });

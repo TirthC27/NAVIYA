@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, Map, BookOpen, Target, Activity, Sparkles, Briefcase, LogOut, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../api/config';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home' },
@@ -30,7 +31,7 @@ const GlobalNav = () => {
   const handleLogout = async () => {
     try {
       // Call logout API
-      await fetch('http://localhost:8000/api/auth/logout', {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`

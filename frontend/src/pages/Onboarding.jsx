@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '../api/config';
 import { 
   ChevronRight, 
   ChevronLeft,
@@ -80,7 +81,7 @@ const Onboarding = () => {
       }
 
       try {
-        const response = await fetch(`http://localhost:8000/api/onboarding/status?user_id=${user.id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/onboarding/status?user_id=${user.id}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`
           }
@@ -106,7 +107,7 @@ const Onboarding = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/onboarding/save', {
+      const response = await fetch(`${API_BASE_URL}/api/onboarding/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -201,7 +202,7 @@ const Onboarding = () => {
   const completeOnboarding = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/onboarding/complete', {
+      const response = await fetch(`${API_BASE_URL}/api/onboarding/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

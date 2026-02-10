@@ -639,7 +639,7 @@ async def interview_chat(req: InterviewChatRequest):
                 headers={
                     "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
                     "Content-Type": "application/json",
-                    "HTTP-Referer": "http://localhost:5173",
+                    "HTTP-Referer": os.getenv("APP_URL", "https://naviya.vercel.app"),
                     "X-Title": "NAVIYA Interview Coach",
                 },
                 json={
