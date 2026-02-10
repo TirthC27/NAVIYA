@@ -969,7 +969,6 @@ MIT License - See [LICENSE](LICENSE) for details
 *Made by [Tirth Chudgar](https://github.com/TirthC27)*
 
 [![GitHub](https://img.shields.io/badge/GitHub-TirthC27-black?style=for-the-badge&logo=github)](https://github.com/TirthC27)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin)]
 
 **⭐ Star this repo if NAVIYA helped you!**
 
