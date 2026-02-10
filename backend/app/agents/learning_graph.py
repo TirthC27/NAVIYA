@@ -1,5 +1,5 @@
 """
-LearnTube AI - Progressive Learning Agent with LangGraph
+Naviya AI - Progressive Learning Agent with LangGraph
 Workflow: Topic -> Small Roadmap -> One Video Per Step -> Progressive Deepening
 
 OPIK Integration:
@@ -677,13 +677,13 @@ def create_progressive_learning_graph():
     workflow.add_node("difficulty_analyzer", difficulty_analyzer_node)
     workflow.add_node("roadmap_generator", roadmap_generator_node)
     workflow.add_node("video_fetcher", video_fetcher_node)
-    workflow.add_node("final_response", final_response_node)
+    workflow.add_node("build_final_response", final_response_node)
     
     workflow.set_entry_point("difficulty_analyzer")
     workflow.add_edge("difficulty_analyzer", "roadmap_generator")
     workflow.add_edge("roadmap_generator", "video_fetcher")
-    workflow.add_edge("video_fetcher", "final_response")
-    workflow.add_edge("final_response", END)
+    workflow.add_edge("video_fetcher", "build_final_response")
+    workflow.add_edge("build_final_response", END)
     
     return workflow.compile()
 

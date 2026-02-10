@@ -94,14 +94,14 @@ async def register(request: RegisterRequest):
     Register a new user
     """
     try:
-        print(f"🔵 Registration attempt for: {request.email}")
+        print(f"[INFO] Registration attempt for: {request.email}")
         
         async with httpx.AsyncClient() as client:
             # Check if user already exists
             check_url = f"{SUPABASE_REST_URL}/users?email=eq.{request.email}&select=id"
             check_response = await client.get(check_url, headers=get_headers())
             
-            print(f"🔵 Check response: {check_response.status_code}")
+            print(f"[INFO] Check response: {check_response.status_code}")
             
             if check_response.status_code == 200 and check_response.json():
                 raise HTTPException(status_code=400, detail="Email already registered")
@@ -122,11 +122,11 @@ async def register(request: RegisterRequest):
                 json=user_data
             )
             
-            print(f"🔵 Insert response: {insert_response.status_code}")
+            print(f"[INFO] Insert response: {insert_response.status_code}")
             
             if insert_response.status_code not in [200, 201]:
                 error_detail = insert_response.text
-                print(f"❌ Insert error: {error_detail}")
+                print(f"[ERR] Insert error: {error_detail}")
                 raise HTTPException(status_code=500, detail=f"Failed to create user: {error_detail}")
             
             users = insert_response.json()
@@ -136,7 +136,7 @@ async def register(request: RegisterRequest):
             user = users[0]
             token = generate_token()
             
-            print(f"✅ User registered successfully: {user['id']}")
+            print(f"[OK] User registered successfully: {user['id']}")
             return AuthResponse(
                 success=True,
                 message="Registration successful",
@@ -155,8 +155,8 @@ async def register(request: RegisterRequest):
         raise
     except Exception as e:
         import traceback
-        print(f"❌ Registration error: {str(e)}")
-        print(f"❌ Traceback: {traceback.format_exc()}")
+        print(f"[ERR] Registration error: {str(e)}")
+        print(f"[ERR] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 
@@ -166,7 +166,7 @@ async def login(request: LoginRequest):
     Login user
     """
     try:
-        print(f"🔵 Login attempt for: {request.email}")
+        print(f"[INFO] Login attempt for: {request.email}")
         
         async with httpx.AsyncClient() as client:
             # Find user by email
@@ -188,7 +188,7 @@ async def login(request: LoginRequest):
             
             token = generate_token()
             
-            print(f"✅ User logged in: {user['id']}")
+            print(f"[OK] User logged in: {user['id']}")
             return AuthResponse(
                 success=True,
                 message="Login successful",
@@ -206,7 +206,7 @@ async def login(request: LoginRequest):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Login error: {str(e)}")
+        print(f"[ERR] Login error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
 

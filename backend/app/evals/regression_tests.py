@@ -1,5 +1,5 @@
 """
-LearnTube AI - Regression Test Suite
+Naviya AI - Regression Test Suite
 Automated testing for model/prompt changes with OPIK experiments
 
 Features:
@@ -551,7 +551,7 @@ async def run_full_regression() -> ExperimentResult:
 # ============================================
 if __name__ == "__main__":
     async def main():
-        print("LearnTube AI - Regression Test Suite")
+        print("Naviya AI - Regression Test Suite")
         print("="*50)
         
         # Run quick regression

@@ -53,9 +53,9 @@ class OnboardingSaveRequest(BaseModel):
 class OnboardingCompleteRequest(BaseModel):
     user_id: str
     selected_domain: str
-    career_goal_raw: str
+    career_goal_raw: Optional[str] = None
     education_level: str
-    current_stage: str
+    current_stage: Optional[str] = None
     self_assessed_level: str
     weekly_hours: int
     primary_blocker: str
@@ -97,7 +97,7 @@ async def get_onboarding_status(user_id: str):
             }
             
     except Exception as e:
-        print(f"❌ Error checking onboarding status: {str(e)}")
+        print(f"[ERR] Error checking onboarding status: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -139,7 +139,7 @@ async def save_onboarding_step(request: OnboardingSaveRequest):
                 response = await client.post(insert_url, headers=get_headers(), json=update_data)
             
             if response.status_code not in [200, 201]:
-                print(f"❌ Save error: {response.text}")
+                print(f"[ERR] Save error: {response.text}")
                 raise HTTPException(status_code=500, detail="Failed to save onboarding data")
             
             return {"success": True, "message": "Progress saved"}
@@ -147,7 +147,7 @@ async def save_onboarding_step(request: OnboardingSaveRequest):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error saving onboarding: {str(e)}")
+        print(f"[ERR] Error saving onboarding: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -162,14 +162,17 @@ async def complete_onboarding(request: OnboardingCompleteRequest):
             update_data = {
                 "user_id": request.user_id,
                 "selected_domain": request.selected_domain,
-                "career_goal_raw": request.career_goal_raw,
                 "education_level": request.education_level,
-                "current_stage": request.current_stage,
                 "self_assessed_level": request.self_assessed_level,
                 "weekly_hours": request.weekly_hours,
                 "primary_blocker": request.primary_blocker,
                 "onboarding_completed": True
             }
+            # Only include optional fields if provided
+            if request.career_goal_raw:
+                update_data["career_goal_raw"] = request.career_goal_raw
+            if request.current_stage:
+                update_data["current_stage"] = request.current_stage
             
             # Check if exists
             check_url = f"{SUPABASE_REST_URL}/user_context?user_id=eq.{request.user_id}&select=user_id"
@@ -185,10 +188,10 @@ async def complete_onboarding(request: OnboardingCompleteRequest):
                 response = await client.post(insert_url, headers=get_headers(), json=update_data)
             
             if response.status_code not in [200, 201]:
-                print(f"❌ Complete error: {response.text}")
+                print(f"[ERR] Complete error: {response.text}")
                 raise HTTPException(status_code=500, detail="Failed to complete onboarding")
             
-            print(f"✅ Onboarding completed for user: {request.user_id}")
+            print(f"[OK] Onboarding completed for user: {request.user_id}")
             
             # Initialize dashboard_state for new user
             dashboard_service = get_dashboard_state_service()
@@ -196,13 +199,13 @@ async def complete_onboarding(request: OnboardingCompleteRequest):
                 user_id=request.user_id,
                 domain=request.selected_domain
             )
-            print(f"✅ Dashboard state initialized for user: {request.user_id}")
+            print(f"[OK] Dashboard state initialized for user: {request.user_id}")
             
             # Trigger SupervisorAgent (the new orchestrator)
             result = await run_supervisor(request.user_id)
             
             if not result.success:
-                print(f"⚠️ SupervisorAgent warning: {result.error}")
+                print(f"[WARN] SupervisorAgent warning: {result.error}")
                 # Don't fail the request - user can still proceed
             
             return {
@@ -218,7 +221,7 @@ async def complete_onboarding(request: OnboardingCompleteRequest):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error completing onboarding: {str(e)}")
+        print(f"[ERR] Error completing onboarding: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -242,7 +245,7 @@ async def get_user_context(user_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error getting user context: {str(e)}")
+        print(f"[ERR] Error getting user context: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -267,7 +270,7 @@ async def run_supervisor_for_user(user_id: str):
             "error": result.error
         }
     except Exception as e:
-        print(f"❌ Error running supervisor: {str(e)}")
+        print(f"[ERR] Error running supervisor: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -304,7 +307,7 @@ async def check_pending_supervisors():
             return {"success": True, "processed": 0}
             
     except Exception as e:
-        print(f"❌ Error checking pending supervisors: {str(e)}")
+        print(f"[ERR] Error checking pending supervisors: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -364,5 +367,5 @@ async def get_dashboard_state(user_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error getting dashboard state: {str(e)}")
+        print(f"[ERR] Error getting dashboard state: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

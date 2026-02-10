@@ -61,7 +61,7 @@ app.include_router(resume_simple.router)
 ### 4. Restart Backend
 
 ```bash
-.\start_server.bat
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## API Endpoints

@@ -15,7 +15,7 @@ try:
     EMBEDDINGS_AVAILABLE = True
 except ImportError:
     EMBEDDINGS_AVAILABLE = False
-    print("⚠️ sentence-transformers not installed. Using default embeddings.")
+    print("[WARN] sentence-transformers not installed. Using default embeddings.")
 
 
 class VectorRAG:
@@ -78,7 +78,7 @@ class VectorRAG:
             ids=ids
         )
         
-        print(f"✅ Loaded {len(documents)} learning paths into vector database")
+        print(f"[OK] Loaded {len(documents)} learning paths into vector database")
     
     def search_similar(self, query: str, n_results: int = 3) -> List[Dict]:
         """Search for similar learning paths using vector similarity"""
@@ -140,13 +140,13 @@ if __name__ == "__main__":
     rag.load_knowledge_base()
     
     # Test search
-    print("\n🔍 Testing search for 'web development':")
+    print("\n[SEARCH] Testing search for 'web development':")
     results = rag.search_similar("I want to learn web development", n_results=2)
     for r in results:
         print(f"  - {r['topic']} (difficulty: {r['difficulty']})")
         print(f"    Subtopics: {', '.join(r['subtopics'][:3])}...")
     
-    print("\n🔍 Testing search for 'AI and neural networks':")
+    print("\n[SEARCH] Testing search for 'AI and neural networks':")
     results = rag.search_similar("artificial intelligence neural networks", n_results=2)
     for r in results:
         print(f"  - {r['topic']} (difficulty: {r['difficulty']})")

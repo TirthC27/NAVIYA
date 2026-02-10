@@ -1,5 +1,5 @@
 """
-LearnTube AI - Supabase Client
+Naviya AI - Supabase Client
 Database connection and client initialization
 """
 
@@ -49,7 +49,7 @@ ANONYMOUS_USER_ID = "00000000-0000-0000-0000-000000000000"
 if __name__ == "__main__":
     try:
         client = get_supabase_client()
-        print("✅ Supabase client initialized successfully!")
+        print("[OK] Supabase client initialized successfully!")
         print(f"   URL: {settings.SUPABASE_URL[:50]}...")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"[ERR] Error: {e}")

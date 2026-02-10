@@ -4,8 +4,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 // Theme
 import { ThemeProvider } from './context/ThemeContext';
 
+// Opik Metrics Toast (global LLM observability popup)
+import { OpikToastProvider } from './context/OpikToastContext';
+
 // Auth Pages
-import Welcome from './pages/Welcome';
+import Home from './pages/Home';
 import Auth from './pages/Auth';
 import Onboarding from './pages/Onboarding';
 
@@ -64,12 +67,13 @@ function App() {
 
   return (
     <ThemeProvider>
+    <OpikToastProvider>
     <Router>
       <Routes>
         {/* Public Routes - Redirect to dashboard if authenticated */}
         <Route path="/" element={
           <PublicRoute>
-            <Welcome />
+            <Home />
           </PublicRoute>
         } />
         <Route path="/auth" element={
@@ -114,6 +118,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
+    </OpikToastProvider>
     </ThemeProvider>
   );
 }

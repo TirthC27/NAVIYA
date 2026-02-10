@@ -392,7 +392,7 @@ const UnifiedDashboard = ({ onNavigate = () => {} }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 p-8 transition-colors">
         <div className="max-w-6xl mx-auto">
           <DashboardStateLoader />
         </div>
@@ -402,9 +402,9 @@ const UnifiedDashboard = ({ onNavigate = () => {} }) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center transition-colors">
         <div className="text-center">
-          <p className="text-red-500 mb-4">Error loading dashboard: {error}</p>
+          <p className="text-red-500 dark:text-red-400 mb-4">Error loading dashboard: {error}</p>
           <button 
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg"
@@ -417,7 +417,7 @@ const UnifiedDashboard = ({ onNavigate = () => {} }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
       {/* Update notification */}
       <AnimatePresence>
         {showUpdateAnimation && (

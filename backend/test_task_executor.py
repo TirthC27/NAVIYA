@@ -414,7 +414,7 @@ def test_integration_instructions():
     ========================================
     
     Prerequisites:
-    1. Backend server running: start_server.bat
+    1. Backend server running: uvicorn app.main:app --host 0.0.0.0 --port 8000
     2. Database schema applied:
        - onboarding_schema.sql
        - agent_activity_log_schema.sql

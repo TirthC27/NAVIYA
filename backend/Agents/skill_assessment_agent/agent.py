@@ -12,12 +12,22 @@ Pipeline:
 
 import json
 import uuid
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import httpx
 
 from .scoring import score_actions
+
+try:
+    from app.observability.opik_client import (
+        init_opik, start_trace, end_trace,
+        create_span_async, log_metric, log_feedback,
+    )
+    OPIK_AVAILABLE = True
+except Exception:
+    OPIK_AVAILABLE = False
 
 RULES_DIR = Path(__file__).parent / "rules"
 
@@ -98,6 +108,18 @@ class SkillAssessmentAgent:
         """
         from app.agents.llm import call_gemini
 
+        trace_id = None
+        t0 = time.time()
+        if OPIK_AVAILABLE:
+            try:
+                trace_id = start_trace(
+                    "SkillAssessment_GenerateScenario",
+                    input={"domain": domain, "skill": skill},
+                    metadata={"agent": "skill_assessment", "operation": "generate_scenario"},
+                )
+            except Exception:
+                trace_id = None
+
         core_rules = self.load_core_rules()
         domain_rules = self.load_domain_rules(domain)
         all_rule_ids = [r["id"] for r in core_rules + domain_rules]
@@ -153,9 +175,19 @@ Skill being tested: {skill}
 Generate a challenging scenario now."""
 
         response = await call_gemini(prompt, system_prompt)
+        if OPIK_AVAILABLE and trace_id:
+            try:
+                await create_span_async(trace_id, "LLM_ScenarioGeneration", input={"domain": domain, "skill": skill}, output={"response_length": len(response)})
+            except Exception:
+                pass
         scenario = self._parse_json(response)
 
         if not scenario or "available_actions" not in scenario:
+            if OPIK_AVAILABLE and trace_id:
+                try:
+                    end_trace(trace_id, output={"error": "invalid_scenario"}, status="error")
+                except Exception:
+                    pass
             raise ValueError("LLM failed to generate valid scenario")
 
         # Validate rule_mappings only reference real rules
@@ -167,6 +199,16 @@ Generate a challenging scenario now."""
         scenario["scenario_id"] = f"scenario_{uuid.uuid4().hex[:8]}"
         scenario["domain"] = domain
         scenario["skill"] = skill
+
+        if OPIK_AVAILABLE and trace_id:
+            try:
+                duration_ms = (time.time() - t0) * 1000
+                log_metric(trace_id, "scenario_actions_count", float(len(scenario.get("available_actions", []))))
+                log_metric(trace_id, "generation_time_ms", duration_ms)
+                log_feedback(trace_id, "scenario_quality", 1.0, "generated", "system")
+                end_trace(trace_id, output={"scenario_id": scenario["scenario_id"], "actions": len(scenario.get("available_actions", []))}, status="success")
+            except Exception:
+                pass
 
         return scenario
 
@@ -191,6 +233,18 @@ Generate a challenging scenario now."""
     ) -> Dict:
         """LLM evaluates user's explanation against fixed rubric. Returns bounded scores."""
         from app.agents.llm import call_gemini
+
+        trace_id = None
+        t0 = time.time()
+        if OPIK_AVAILABLE:
+            try:
+                trace_id = start_trace(
+                    "SkillAssessment_EvaluateExplanation",
+                    input={"explanation_length": len(explanation), "scenario_id": scenario.get("scenario_id", ""), "actions_count": len(user_actions)},
+                    metadata={"agent": "skill_assessment", "operation": "evaluate_explanation"},
+                )
+            except Exception:
+                trace_id = None
 
         actions_text = ", ".join(a["action_id"] for a in user_actions)
         context = scenario.get("context", "")
@@ -223,9 +277,19 @@ User's explanation:
 Evaluate now."""
 
         response = await call_gemini(prompt, system_prompt)
+        if OPIK_AVAILABLE and trace_id:
+            try:
+                await create_span_async(trace_id, "LLM_ExplanationEval", input={"explanation_length": len(explanation)}, output={"response_length": len(response)})
+            except Exception:
+                pass
         eval_data = self._parse_json(response)
 
         if not eval_data:
+            if OPIK_AVAILABLE and trace_id:
+                try:
+                    end_trace(trace_id, output={"error": "parse_failed"}, status="error")
+                except Exception:
+                    pass
             return {
                 "logical_coherence": 50,
                 "self_awareness": 50,
@@ -237,6 +301,19 @@ Evaluate now."""
         for key in ["logical_coherence", "self_awareness", "ethical_consideration"]:
             val = eval_data.get(key, 50)
             eval_data[key] = max(0, min(100, int(val)))
+
+        if OPIK_AVAILABLE and trace_id:
+            try:
+                duration_ms = (time.time() - t0) * 1000
+                avg_score = sum(eval_data.get(k, 0) for k in ["logical_coherence", "self_awareness", "ethical_consideration"]) / 3
+                log_metric(trace_id, "logical_coherence", float(eval_data["logical_coherence"]))
+                log_metric(trace_id, "self_awareness", float(eval_data["self_awareness"]))
+                log_metric(trace_id, "ethical_consideration", float(eval_data["ethical_consideration"]))
+                log_metric(trace_id, "evaluation_time_ms", duration_ms)
+                log_feedback(trace_id, "explanation_quality", avg_score / 100, eval_data.get("feedback", ""), "llm-judge")
+                end_trace(trace_id, output=eval_data, status="success")
+            except Exception:
+                pass
 
         return eval_data
 

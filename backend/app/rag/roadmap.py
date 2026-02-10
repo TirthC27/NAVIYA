@@ -1,5 +1,5 @@
 """
-LearnTube AI - RAG Roadmap Module
+Naviya AI - RAG Roadmap Module
 Returns syllabus subtopics for a given learning topic
 """
 
@@ -119,10 +119,10 @@ async def get_learning_roadmap(topic: str) -> list[str]:
             vector_rag = get_vector_rag()
             result = vector_rag.get_roadmap_for_topic(topic)
             if result and result.get('subtopics'):
-                print(f"✅ Found roadmap in Vector DB for '{topic}'")
+                print(f"[OK] Found roadmap in Vector DB for '{topic}'")
                 return result['subtopics']
         except Exception as e:
-            print(f"⚠️ Vector RAG error: {e}")
+            print(f"[WARN] Vector RAG error: {e}")
     
     # Load static roadmaps
     roadmaps = load_roadmaps()
@@ -170,37 +170,37 @@ if __name__ == "__main__":
     
     async def test():
         print("=" * 60)
-        print("LearnTube AI - RAG Roadmap Module Test")
+        print("Naviya AI - RAG Roadmap Module Test")
         print("=" * 60)
         
         # Test 1: Static knowledge base lookup
-        print("\n📚 Test 1: Static KB - 'Graph Algorithms'")
+        print("\n[DOCS] Test 1: Static KB - 'Graph Algorithms'")
         print("-" * 40)
         result = await get_learning_roadmap("Graph Algorithms")
         for i, subtopic in enumerate(result, 1):
             print(f"  {i}. {subtopic}")
         
         # Test 2: Partial match
-        print("\n📚 Test 2: Partial Match - 'DP'")
+        print("\n[DOCS] Test 2: Partial Match - 'DP'")
         print("-" * 40)
         result = await get_learning_roadmap("dynamic programming")
         for i, subtopic in enumerate(result, 1):
             print(f"  {i}. {subtopic}")
         
         # Test 3: LLM fallback (topic not in KB)
-        print("\n🤖 Test 3: LLM Fallback - 'Kubernetes'")
+        print("\n[BOT] Test 3: LLM Fallback - 'Kubernetes'")
         print("-" * 40)
         result = await get_learning_roadmap("Kubernetes")
         for i, subtopic in enumerate(result, 1):
             print(f"  {i}. {subtopic}")
         
         # Show available topics
-        print("\n📋 Available Topics in Knowledge Base:")
+        print("\n[LIST] Available Topics in Knowledge Base:")
         print("-" * 40)
         for topic in get_available_topics():
             print(f"  • {topic}")
         
         print("\n" + "=" * 60)
-        print("✅ Tests completed!")
+        print("[OK] Tests completed!")
     
     asyncio.run(test())

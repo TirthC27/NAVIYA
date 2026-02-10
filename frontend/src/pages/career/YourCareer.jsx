@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useDashboardState } from '../../context/DashboardStateContext';
 import { useNavigate } from 'react-router-dom';
+import OpikEvalPopup from '../../components/observability/OpikEvalPopup';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
@@ -56,6 +57,7 @@ const YourCareer = () => {
   const [gapResult, setGapResult] = useState(null);
   const [gapLoading, setGapLoading] = useState(false);
   const [targetRole, setTargetRole] = useState('');
+  const [opikEval, setOpikEval] = useState(null);
 
   // Social links editing
   const [editingSocial, setEditingSocial] = useState(false);
@@ -115,7 +117,11 @@ const YourCareer = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, target_role: targetRole })
       });
-      if (resp.ok) setGapResult(await resp.json());
+      if (resp.ok) {
+        const data = await resp.json();
+        setGapResult(data);
+        if (data.opik_eval) setOpikEval(data.opik_eval);
+      }
     } catch (err) {
       console.error('Gap analysis error:', err);
     } finally {
@@ -158,10 +164,10 @@ const YourCareer = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center transition-colors">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-3" />
-          <p className="text-slate-600">Loading your career profile...</p>
+          <Loader2 className="w-8 h-8 text-amber-500 dark:text-lime-400 animate-spin mx-auto mb-3" />
+          <p className="text-slate-600 dark:text-slate-400">Loading your career profile...</p>
         </div>
       </div>
     );
@@ -170,7 +176,7 @@ const YourCareer = () => {
   const socialLinks = resumeData?.social_links || {};
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -179,11 +185,11 @@ const YourCareer = () => {
       >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-800 flex items-center gap-3">
-              <Briefcase className="w-6 h-6 text-amber-500" />
+            <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-3">
+              <Briefcase className="w-6 h-6 text-amber-500 dark:text-lime-400" />
               Your Career
             </h1>
-            <p className="text-slate-500 mt-1">Your career profile — powered by AI resume analysis</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Your career profile — powered by AI resume analysis</p>
           </div>
         </div>
       </motion.div>
@@ -193,10 +199,10 @@ const YourCareer = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl border-2 border-dashed border-slate-300 p-12 text-center"
+          className="bg-white dark:bg-slate-900 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-12 text-center transition-colors"
         >
-          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-            <FileText className="w-8 h-8 text-amber-500" />
+          <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-lime-900/30 flex items-center justify-center mx-auto mb-4">
+            <FileText className="w-8 h-8 text-amber-500 dark:text-lime-400" />
           </div>
           <h3 className="text-lg font-medium text-slate-800 mb-2">No Resume Uploaded Yet</h3>
           <p className="text-slate-500 mb-6 max-w-md mx-auto">
@@ -546,6 +552,14 @@ const YourCareer = () => {
             )}
           </motion.div>
         </div>
+      )}
+
+      {opikEval && (
+        <OpikEvalPopup
+          evaluation={opikEval}
+          agentName="Skill Gap Analysis"
+          onClose={() => setOpikEval(null)}
+        />
       )}
     </div>
   );

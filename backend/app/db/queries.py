@@ -1,5 +1,5 @@
 """
-LearnTube AI - Database Queries for Progressive Learning
+Naviya AI - Database Queries for Progressive Learning
 Handles learning steps, progress tracking, and user state
 """
 

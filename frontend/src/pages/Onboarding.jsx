@@ -10,15 +10,13 @@ import {
   FileText,
   Palette,
   MoreHorizontal,
-  GraduationCap,
   Clock,
-  Target,
   AlertCircle,
   Check,
   Sparkles
 } from 'lucide-react';
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 5;
 
 // Domain options with icons
 const DOMAIN_OPTIONS = [
@@ -38,18 +36,6 @@ const EDUCATION_OPTIONS = [
   'Post Graduate',
   'PhD',
   'Working Professional',
-  'Other'
-];
-
-const STAGE_OPTIONS = [
-  '1st Year Student',
-  '2nd Year Student',
-  '3rd Year Student',
-  'Final Year Student',
-  'Intern',
-  'Fresh Graduate',
-  'Working Professional',
-  'Career Changer',
   'Other'
 ];
 
@@ -77,8 +63,6 @@ const Onboarding = () => {
   const [formData, setFormData] = useState({
     selected_domain: '',
     education_level: '',
-    current_stage: '',
-    career_goal_raw: '',
     self_assessed_level: '',
     weekly_hours: 10,
     primary_blocker: ''
@@ -191,30 +175,18 @@ const Onboarding = () => {
         }
         break;
       case 3:
-        if (!formData.current_stage) {
-          setError('Please select your current stage');
-          return false;
-        }
-        break;
-      case 4:
-        if (!formData.career_goal_raw || formData.career_goal_raw.trim().length < 10) {
-          setError('Please describe your career goal (at least 10 characters)');
-          return false;
-        }
-        break;
-      case 5:
         if (!formData.self_assessed_level) {
           setError('Please select your skill level');
           return false;
         }
         break;
-      case 6:
+      case 4:
         if (!formData.weekly_hours) {
           setError('Please select your time commitment');
           return false;
         }
         break;
-      case 7:
+      case 5:
         if (!formData.primary_blocker || formData.primary_blocker.trim().length < 5) {
           setError('Please share what\'s holding you back');
           return false;
@@ -237,7 +209,13 @@ const Onboarding = () => {
         },
         body: JSON.stringify({
           user_id: user.id,
-          ...formData
+          selected_domain: formData.selected_domain,
+          education_level: formData.education_level,
+          self_assessed_level: formData.self_assessed_level,
+          weekly_hours: formData.weekly_hours,
+          primary_blocker: formData.primary_blocker,
+          career_goal_raw: null,
+          current_stage: null
         })
       });
 
@@ -301,27 +279,27 @@ const Onboarding = () => {
       case 1:
         return (
           <div className="space-y-4">
-            <h2 className="text-2xl font-semibold text-slate-800 text-center mb-2">
+            <h2 className="text-xl font-semibold text-slate-800 text-center mb-1">
               Which domain are you aiming for?
             </h2>
-            <p className="text-slate-500 text-center mb-6">
+            <p className="text-slate-500 text-center text-sm mb-4">
               This helps us personalize your career roadmap
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {DOMAIN_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => updateField('selected_domain', option.value)}
-                  className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${
+                  className={`p-3 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-1.5 ${
                     formData.selected_domain === option.value
                       ? 'border-amber-400 bg-amber-50'
                       : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
-                  <option.icon className={`w-6 h-6 ${
+                  <option.icon className={`w-5 h-5 ${
                     formData.selected_domain === option.value ? 'text-amber-600' : 'text-slate-500'
                   }`} />
-                  <span className={`text-sm font-medium ${
+                  <span className={`text-xs font-medium ${
                     formData.selected_domain === option.value ? 'text-amber-800' : 'text-slate-700'
                   }`}>
                     {option.value}
@@ -334,19 +312,19 @@ const Onboarding = () => {
 
       case 2:
         return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold text-slate-800 text-center mb-2">
+          <div className="space-y-3">
+            <h2 className="text-xl font-semibold text-slate-800 text-center mb-1">
               What's your current education level?
             </h2>
-            <p className="text-slate-500 text-center mb-6">
+            <p className="text-slate-500 text-center text-sm mb-4">
               Help us understand your background
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {EDUCATION_OPTIONS.map((option) => (
                 <button
                   key={option}
                   onClick={() => updateField('education_level', option)}
-                  className={`p-3 rounded-xl border-2 transition-all duration-200 ${
+                  className={`p-2.5 rounded-xl border-2 transition-all duration-200 ${
                     formData.education_level === option
                       ? 'border-amber-400 bg-amber-50'
                       : 'border-slate-200 hover:border-slate-300 bg-white'
@@ -365,29 +343,35 @@ const Onboarding = () => {
 
       case 3:
         return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold text-slate-800 text-center mb-2">
-              Where are you currently?
+          <div className="space-y-3">
+            <h2 className="text-xl font-semibold text-slate-800 text-center mb-1">
+              How would you rate yourself?
             </h2>
-            <p className="text-slate-500 text-center mb-6">
-              Your current stage in your career journey
+            <p className="text-slate-500 text-center text-sm mb-4">
+              Be honest — this helps us calibrate your path
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              {STAGE_OPTIONS.map((option) => (
+            <div className="space-y-2">
+              {LEVEL_OPTIONS.map((option) => (
                 <button
-                  key={option}
-                  onClick={() => updateField('current_stage', option)}
-                  className={`p-3 rounded-xl border-2 transition-all duration-200 ${
-                    formData.current_stage === option
+                  key={option.value}
+                  onClick={() => updateField('self_assessed_level', option.value)}
+                  className={`w-full p-3 rounded-xl border-2 transition-all duration-200 flex items-center justify-between ${
+                    formData.self_assessed_level === option.value
                       ? 'border-amber-400 bg-amber-50'
                       : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
-                  <span className={`text-sm font-medium ${
-                    formData.current_stage === option ? 'text-amber-800' : 'text-slate-700'
-                  }`}>
-                    {option}
-                  </span>
+                  <div className="text-left">
+                    <span className={`text-sm font-medium ${
+                      formData.self_assessed_level === option.value ? 'text-amber-800' : 'text-slate-700'
+                    }`}>
+                      {option.label}
+                    </span>
+                    <p className="text-xs text-slate-400">{option.description}</p>
+                  </div>
+                  {formData.self_assessed_level === option.value && (
+                    <Check className="w-4 h-4 text-amber-600" />
+                  )}
                 </button>
               ))}
             </div>
@@ -396,101 +380,39 @@ const Onboarding = () => {
 
       case 4:
         return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold text-slate-800 text-center mb-2">
-              What do you want to become?
-            </h2>
-            <p className="text-slate-500 text-center mb-6">
-              Describe your dream role in your own words
-            </p>
-            <div className="relative">
-              <Target className="absolute left-4 top-4 w-5 h-5 text-slate-400" />
-              <textarea
-                value={formData.career_goal_raw}
-                onChange={(e) => updateField('career_goal_raw', e.target.value)}
-                placeholder="e.g., I want to become a full-stack developer at a top tech company, building products that millions of people use..."
-                className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-slate-200 focus:border-amber-400 focus:ring-0 outline-none transition-colors resize-none text-slate-700 placeholder:text-slate-400"
-                rows={5}
-              />
-            </div>
-            <p className="text-xs text-slate-400 text-right">
-              {formData.career_goal_raw.length} characters
-            </p>
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold text-slate-800 text-center mb-2">
-              How would you rate yourself?
-            </h2>
-            <p className="text-slate-500 text-center mb-6">
-              Be honest - this helps us calibrate your learning path
-            </p>
-            <div className="space-y-3">
-              {LEVEL_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => updateField('self_assessed_level', option.value)}
-                  className={`w-full p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between ${
-                    formData.self_assessed_level === option.value
-                      ? 'border-amber-400 bg-amber-50'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
-                >
-                  <div className="text-left">
-                    <span className={`font-medium ${
-                      formData.self_assessed_level === option.value ? 'text-amber-800' : 'text-slate-700'
-                    }`}>
-                      {option.label}
-                    </span>
-                    <p className="text-sm text-slate-400">{option.description}</p>
-                  </div>
-                  {formData.self_assessed_level === option.value && (
-                    <Check className="w-5 h-5 text-amber-600" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 6:
-        return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold text-slate-800 text-center mb-2">
+          <div className="space-y-3">
+            <h2 className="text-xl font-semibold text-slate-800 text-center mb-1">
               How many hours per week can you give?
             </h2>
-            <p className="text-slate-500 text-center mb-6">
-              Be realistic - consistency beats intensity
+            <p className="text-slate-500 text-center text-sm mb-4">
+              Be realistic — consistency beats intensity
             </p>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {HOURS_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => updateField('weekly_hours', option.value)}
-                  className={`w-full p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between ${
+                  className={`w-full p-3 rounded-xl border-2 transition-all duration-200 flex items-center justify-between ${
                     formData.weekly_hours === option.value
                       ? 'border-amber-400 bg-amber-50'
                       : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Clock className={`w-5 h-5 ${
+                    <Clock className={`w-4 h-4 ${
                       formData.weekly_hours === option.value ? 'text-amber-600' : 'text-slate-400'
                     }`} />
                     <div className="text-left">
-                      <span className={`font-medium ${
+                      <span className={`text-sm font-medium ${
                         formData.weekly_hours === option.value ? 'text-amber-800' : 'text-slate-700'
                       }`}>
                         {option.label}
                       </span>
-                      <p className="text-sm text-slate-400">{option.description}</p>
+                      <p className="text-xs text-slate-400">{option.description}</p>
                     </div>
                   </div>
                   {formData.weekly_hours === option.value && (
-                    <Check className="w-5 h-5 text-amber-600" />
+                    <Check className="w-4 h-4 text-amber-600" />
                   )}
                 </button>
               ))}
@@ -498,23 +420,23 @@ const Onboarding = () => {
           </div>
         );
 
-      case 7:
+      case 5:
         return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-semibold text-slate-800 text-center mb-2">
+          <div className="space-y-3">
+            <h2 className="text-xl font-semibold text-slate-800 text-center mb-1">
               What's holding you back the most?
             </h2>
-            <p className="text-slate-500 text-center mb-6">
+            <p className="text-slate-500 text-center text-sm mb-4">
               Understanding your challenges helps us help you better
             </p>
             <div className="relative">
-              <AlertCircle className="absolute left-4 top-4 w-5 h-5 text-slate-400" />
+              <AlertCircle className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
               <textarea
                 value={formData.primary_blocker}
                 onChange={(e) => updateField('primary_blocker', e.target.value)}
                 placeholder="e.g., I struggle with staying consistent, or I don't know where to start, or I lack practical experience..."
-                className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-slate-200 focus:border-amber-400 focus:ring-0 outline-none transition-colors resize-none text-slate-700 placeholder:text-slate-400"
-                rows={4}
+                className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-amber-400 focus:ring-0 outline-none transition-colors resize-none text-sm text-slate-700 placeholder:text-slate-400"
+                rows={3}
               />
             </div>
           </div>
@@ -528,24 +450,22 @@ const Onboarding = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-amber-50/30 flex items-center justify-center p-4">
       {/* Background decoration */}
-      <div className="absolute top-20 left-20 text-amber-200 text-4xl">+</div>
-      <div className="absolute bottom-32 right-20 text-amber-200 text-4xl">+</div>
       <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-amber-100/20 rounded-full blur-3xl" />
 
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-white" />
           </div>
-          <span className="text-xl font-bold text-slate-800">Naviya</span>
+          <span className="text-lg font-bold text-slate-800">Naviya</span>
         </div>
 
         {/* Progress */}
         {renderProgress()}
 
         {/* Step indicator */}
-        <p className="text-center text-sm text-slate-500 mb-6">
+        <p className="text-center text-xs text-slate-500 mb-4">
           Step {currentStep} of {TOTAL_STEPS}
         </p>
 
@@ -556,7 +476,7 @@ const Onboarding = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100"
+          className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-6 border border-slate-100"
         >
           {renderStepContent()}
 
@@ -573,7 +493,7 @@ const Onboarding = () => {
           )}
 
           {/* Navigation buttons */}
-          <div className="flex items-center justify-between mt-8">
+          <div className="flex items-center justify-between mt-6">
             <button
               onClick={handlePrevious}
               disabled={currentStep === 1 || loading}

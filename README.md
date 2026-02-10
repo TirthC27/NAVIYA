@@ -356,7 +356,6 @@ NAVIYA_testing/
 │   │       └── tutorials/
 │   │
 │   ├── requirements.txt              # Python dependencies
-│   ├── start_server.bat              # Windows server startup script
 │   ├── OPIK_INTEGRATION.md           # OPIK documentation
 │   ├── KNOWLEDGE_BASE.md             # RAG setup guide
 │   ├── DOCUMENT_INGESTION.md         # Document processing guide
@@ -495,10 +494,6 @@ NAVIYA_testing/
 
 8. **Start the backend server**
    ```bash
-   # Windows
-   start_server.bat
-   
-   # Linux/Mac
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
@@ -593,11 +588,7 @@ Run the SQL files in Supabase SQL Editor in this order:
 
 1. **Start Backend** (in `backend/` directory)
    ```bash
-   # Windows
-   start_server.bat
-   
-   # Linux/Mac
-   uvicorn app.main:app --reload --port 8000
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
 2. **Start Frontend** (in `frontend/` directory)

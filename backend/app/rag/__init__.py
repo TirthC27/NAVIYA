@@ -1,5 +1,5 @@
 """
-LearnTube AI - RAG Module
+Naviya AI - RAG Module
 Retrieval-Augmented Generation for intelligent content processing
 """
 

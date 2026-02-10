@@ -21,6 +21,9 @@ from pydantic import BaseModel
 import httpx
 
 from app.config import settings
+from app.observability.opik_client import (
+    start_trace, end_trace, create_span_async, log_metric
+)
 
 router = APIRouter(prefix="/api/topic-explainer", tags=["Topic Explainer"])
 
@@ -69,7 +72,14 @@ async def _openrouter_chat(
     temperature: float = 0.7,
     extra_body: Optional[Dict] = None,
 ) -> str:
-    """Generic OpenRouter chat completion call."""
+    """Generic OpenRouter chat completion call. Traced via Opik."""
+    # Start Opik trace for this LLM call
+    trace_id = start_trace(
+        "TopicExplainer_LLM",
+        metadata={"model": model, "max_tokens": max_tokens, "temperature": temperature},
+        tags=["llm", "topic-explainer", model.split("/")[-1]],
+    )
+
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
@@ -89,11 +99,14 @@ async def _openrouter_chat(
     for attempt in range(1, 4):  # up to 3 retries
         try:
             async with httpx.AsyncClient(timeout=300.0) as client:
+                t0 = time.time()
                 resp = await client.post(
                     f"{OPENROUTER_BASE_URL}/chat/completions",
                     headers=headers,
                     json=body,
                 )
+                latency_ms = (time.time() - t0) * 1000
+
             if resp.status_code != 200:
                 detail = resp.text[:400]
                 last_error = f"OpenRouter error ({resp.status_code}): {detail}"
@@ -102,6 +115,7 @@ async def _openrouter_chat(
                     import asyncio as _aio
                     await _aio.sleep(attempt * 5)
                     continue
+                end_trace(trace_id, output={"error": last_error}, status="error")
                 raise HTTPException(status_code=502, detail=last_error)
 
             data = resp.json()
@@ -117,6 +131,16 @@ async def _openrouter_chat(
                 print(f"  [chat] Attempt {attempt}: {last_error}")
                 continue
 
+            usage = data.get("usage", {})
+            end_trace(trace_id, output={
+                "response_length": len(content),
+                "latency_ms": round(latency_ms, 1),
+                "model": data.get("model", model),
+                "prompt_tokens": usage.get("prompt_tokens", 0),
+                "completion_tokens": usage.get("completion_tokens", 0),
+                "total_tokens": usage.get("total_tokens", 0),
+                "attempts": attempt,
+            }, status="success")
             return content
 
         except HTTPException:
@@ -129,6 +153,7 @@ async def _openrouter_chat(
                 await _aio.sleep(attempt * 3)
                 continue
 
+    end_trace(trace_id, output={"error": f"Failed after 3 attempts: {last_error}"}, status="error")
     raise HTTPException(status_code=502, detail=f"Failed after 3 attempts: {last_error}")
 
 
@@ -321,36 +346,50 @@ async def generate_topic_presentation(req: TopicRequest):
 
     session_id = str(uuid.uuid4())
     print(f"\n{'='*50}")
-    print(f"🎓 Topic Explainer: '{topic}'  session={session_id[:8]}")
+    print(f"[EDU] Topic Explainer: '{topic}'  session={session_id[:8]}")
     print(f"{'='*50}")
+
+    trace_id = start_trace(
+        "TopicExplainer",
+        metadata={"topic": topic, "session_id": session_id, "user_id": req.user_id},
+        tags=["topic-explainer", "education"]
+    )
 
     try:
         # ── 1. Research ──
-        print("  📚 Step 1/3: Deep research via Perplexity …")
-        research = await research_topic(topic)
-        print(f"  ✓ Research complete ({len(research)} chars)")
+        print("  [DOCS] Step 1/3: Deep research via Perplexity ...")
+        async with create_span_async(trace_id, "Research", span_type="llm", input_data={"topic": topic}) as research_span:
+            research = await research_topic(topic)
+            research_span.set_output({"length": len(research)})
+        print(f"  [OK] Research complete ({len(research)} chars)")
 
         # ── 2. Slide structure + narration ──
-        print("  🏗️  Step 2/3: Generating slide structure …")
-        slides = await generate_slide_structure(topic, research)
-        print(f"  ✓ {len(slides)} slides generated")
+        print("  [BUILD] Step 2/3: Generating slide structure ...")
+        async with create_span_async(trace_id, "SlideGeneration", span_type="llm", input_data={"research_length": len(research)}) as slide_span:
+            slides = await generate_slide_structure(topic, research)
+            slide_span.set_output({"slide_count": len(slides)})
+        print(f"  [OK] {len(slides)} slides generated")
 
         # ── 3. Images (parallel, best-effort) ──
-        print("  🎨 Step 3/3: Generating slide images …")
-        image_tasks = [generate_slide_image(topic, s) for s in slides]
-        image_results = await asyncio.gather(*image_tasks, return_exceptions=True)
+        print("  [ART] Step 3/3: Generating slide images ...")
+        async with create_span_async(trace_id, "ImageGeneration", span_type="tool", input_data={"slide_count": len(slides)}) as img_span:
+            image_tasks = [generate_slide_image(topic, s) for s in slides]
+            image_results = await asyncio.gather(*image_tasks, return_exceptions=True)
 
         # Store images in session
         session_images: Dict[int, bytes] = {}
+        images_generated = 0
         for idx, img in enumerate(image_results):
             if isinstance(img, bytes) and len(img) > 100:
                 slide_num = slides[idx].get("slide_number", idx + 1)
                 session_images[slide_num] = img
                 slides[idx]["has_image"] = True
-                print(f"  ✓ Slide {slide_num} image ready")
+                images_generated += 1
+                print(f"  [OK] Slide {slide_num} image ready")
             else:
                 slides[idx]["has_image"] = False
-                print(f"  ⚠ Slide {idx+1} image skipped")
+                print(f"  [WARN] Slide {idx+1} image skipped")
+        img_span.set_output({"images_generated": images_generated})
 
         _sessions[session_id] = {
             "topic": topic,
@@ -359,7 +398,10 @@ async def generate_topic_presentation(req: TopicRequest):
             "created_at": datetime.utcnow().isoformat(),
         }
 
-        print(f"  ✅ Done! {len(session_images)}/{len(slides)} images generated")
+        print(f"  [OK] Done! {len(session_images)}/{len(slides)} images generated")
+
+        log_metric(trace_id, "slide_count", float(len(slides)))
+        log_metric(trace_id, "images_generated", float(len(session_images)))
 
         # Build response slides (without raw image bytes)
         response_slides = []
@@ -376,6 +418,12 @@ async def generate_topic_presentation(req: TopicRequest):
                     if s.get("has_image") else None,
             })
 
+        end_trace(
+            trace_id,
+            output={"slides": len(slides), "images": len(session_images), "session_id": session_id},
+            status="success"
+        )
+
         return GenerateResponse(
             success=True,
             session_id=session_id,
@@ -384,9 +432,11 @@ async def generate_topic_presentation(req: TopicRequest):
         )
 
     except HTTPException:
+        end_trace(trace_id, output={"error": "HTTP error"}, status="error")
         raise
     except Exception as e:
-        print(f"  ❌ Pipeline error: {e}")
+        print(f"  [ERR] Pipeline error: {e}")
+        end_trace(trace_id, output={"error": str(e)}, status="error")
         return GenerateResponse(
             success=False,
             session_id=session_id,

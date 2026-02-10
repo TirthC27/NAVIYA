@@ -27,6 +27,7 @@ from app.agents.interview_evaluation_agent import (
     parse_transcript_to_qa_pairs,
 )
 from app.services.dashboard_state import get_dashboard_state_service
+from app.observability.opik_client import start_trace, end_trace
 
 router = APIRouter(prefix="/api/interview", tags=["Mock Interview"])
 
@@ -81,12 +82,17 @@ def _convert_webm_to_wav(input_path: str, output_path: str) -> bool:
 async def transcribe_audio_openrouter(audio_path: str) -> Dict[str, Any]:
     """
     Transcribe audio using OpenRouter's whisper endpoint.
-    
-    Uses the project's .env OPENROUTER_API_KEY (settings.OPENROUTER_API_KEY),
-    NEVER falls back to system environment variables.
+    Traced via Opik for observability.
     """
+    trace_id = start_trace(
+        "Interview_Transcribe",
+        metadata={"model": "openai/whisper-large-v3", "audio_path": os.path.basename(audio_path)},
+        tags=["llm", "interview", "transcription"],
+    )
+
     api_key = settings.OPENROUTER_API_KEY
     if not api_key:
+        end_trace(trace_id, output={"error": "no_api_key"}, status="error")
         raise HTTPException(500, "OPENROUTER_API_KEY not configured in backend/.env")
 
     print(f"[Transcribe] Using API key from .env: {api_key[:8]}...{api_key[-4:]}")
@@ -133,9 +139,12 @@ async def transcribe_audio_openrouter(audio_path: str) -> Dict[str, Any]:
         "temperature": 0.0,
     }
 
+    import time as _time
     async with httpx.AsyncClient(timeout=120.0) as client:
         print("[Transcribe] Sending audio to OpenRouter (whisper-large-v3)...")
+        t0 = _time.time()
         response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
+        latency_ms = (_time.time() - t0) * 1000
 
         if response.status_code != 200:
             error_text = response.text
@@ -143,10 +152,17 @@ async def transcribe_audio_openrouter(audio_path: str) -> Dict[str, Any]:
 
             # If whisper model fails, fall back to Gemini for audio understanding
             print("[Transcribe] Falling back to Gemini Flash for transcription...")
+            end_trace(trace_id, output={"fallback": "gemini", "whisper_error": response.status_code}, status="success")
             return await _transcribe_via_gemini(audio_b64, audio_format, headers)
 
         data = response.json()
         text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+        end_trace(trace_id, output={
+            "response_length": len(text),
+            "latency_ms": round(latency_ms, 1),
+            "model": "openai/whisper-large-v3",
+        }, status="success")
 
         return {
             "text": text,
@@ -157,7 +173,15 @@ async def transcribe_audio_openrouter(audio_path: str) -> Dict[str, Any]:
 async def _transcribe_via_gemini(
     audio_b64: str, audio_format: str, base_headers: dict
 ) -> Dict[str, Any]:
-    """Fallback: use Gemini Flash to transcribe audio"""
+    """Fallback: use Gemini Flash to transcribe audio. Traced via Opik."""
+    import time as _time
+
+    trace_id = start_trace(
+        "Interview_Transcribe_Gemini",
+        metadata={"model": settings.GEMINI_MODEL, "fallback": True},
+        tags=["llm", "interview", "transcription", "gemini-fallback"],
+    )
+
     headers = {
         **base_headers,
         "Content-Type": "application/json",
@@ -194,11 +218,14 @@ async def _transcribe_via_gemini(
     }
 
     async with httpx.AsyncClient(timeout=120.0) as client:
+        t0 = _time.time()
         response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
+        latency_ms = (_time.time() - t0) * 1000
 
         if response.status_code != 200:
             error_text = response.text
             print(f"[Transcribe-Gemini] Error ({response.status_code}): {error_text}")
+            end_trace(trace_id, output={"error": f"HTTP {response.status_code}"}, status="error")
             raise HTTPException(
                 502,
                 f"Transcription failed. OpenRouter returned {response.status_code}",
@@ -209,6 +236,14 @@ async def _transcribe_via_gemini(
 
         # Parse labeled transcript into segments
         segments = _parse_labeled_transcript(text)
+
+        end_trace(trace_id, output={
+            "response_length": len(text),
+            "latency_ms": round(latency_ms, 1),
+            "model": settings.GEMINI_MODEL,
+            "segments_count": len(segments),
+        }, status="success")
+
         return {"text": text, "segments": segments}
 
 
@@ -589,8 +624,16 @@ async def interview_chat(req: InterviewChatRequest):
         # Add current user message
         messages.append({"role": "user", "content": req.message})
 
-        # Call OpenRouter
+        # Call OpenRouter — traced via Opik
+        import time as _time
+        chat_trace_id = start_trace(
+            "Interview_Chat",
+            metadata={"model": "google/gemini-2.0-flash-001", "message_length": len(req.message)},
+            tags=["llm", "interview", "chat"],
+        )
+
         async with httpx.AsyncClient(timeout=30.0) as client:
+            t0 = _time.time()
             response = await client.post(
                 OPENROUTER_API_URL,
                 headers={
@@ -606,10 +649,12 @@ async def interview_chat(req: InterviewChatRequest):
                     "temperature": 0.7,
                 },
             )
+            latency_ms = (_time.time() - t0) * 1000
 
             if response.status_code != 200:
                 error_text = response.text[:300]
                 print(f"[InterviewChat] OpenRouter error {response.status_code}: {error_text}")
+                end_trace(chat_trace_id, output={"error": f"HTTP {response.status_code}"}, status="error")
                 raise HTTPException(status_code=502, detail="AI service temporarily unavailable")
 
             data = response.json()
@@ -618,6 +663,15 @@ async def interview_chat(req: InterviewChatRequest):
                 .get("message", {})
                 .get("content", "I'm sorry, I couldn't generate a response. Please try again.")
             )
+
+            usage = data.get("usage", {})
+            end_trace(chat_trace_id, output={
+                "response_length": len(reply),
+                "latency_ms": round(latency_ms, 1),
+                "model": "google/gemini-2.0-flash-001",
+                "prompt_tokens": usage.get("prompt_tokens", 0),
+                "completion_tokens": usage.get("completion_tokens", 0),
+            }, status="success")
 
             return {"success": True, "reply": reply}
 

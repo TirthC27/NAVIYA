@@ -33,6 +33,9 @@ from app.agents.worker_base import AgentWorker, TaskResult
 from app.agents.llm import call_gemini
 from app.llm.provider import get_llm_provider, LLMConfig, LLMModel
 from app.services.dashboard_state import get_dashboard_state_service
+from app.observability.opik_client import (
+    start_trace, end_trace, create_span_async, log_metric, log_feedback
+)
 
 
 # ============================================
@@ -365,11 +368,18 @@ class ResumeIntelligenceAgentWorker(AgentWorker):
         """
         start_time = datetime.now()
         
+        user_id = task_payload.get("user_id", "unknown")
+        task_type = task_payload.get("task_type", "unknown")
+        domain = task_payload.get("domain", "").lower()
+        trace_id = start_trace(
+            "ResumeIntelligenceAgent",
+            metadata={"user_id": user_id, "task_type": task_type, "domain": domain},
+            tags=["resume", task_type, domain]
+        )
+        
         try:
             # Parse required fields
-            user_id = task_payload.get("user_id")
-            task_type = task_payload.get("task_type")
-            domain = task_payload.get("domain", "").lower()
+            task_id = task_payload.get("task_id")
             task_id = task_payload.get("task_id")
             
             # Validate user_id
@@ -433,14 +443,19 @@ class ResumeIntelligenceAgentWorker(AgentWorker):
                 extraction_confidence = task_payload.get("extraction_confidence", "high")
                 
                 # Route to domain-specific analysis
-                if domain == "tech":
-                    analysis = await self._analyze_tech_resume(
-                        resume_text, career_goal_raw, rag_context
-                    )
-                else:  # medical
-                    analysis = await self._analyze_medical_cv(
-                        resume_text, career_goal_raw, rag_context
-                    )
+                async with create_span_async(trace_id, f"AnalyzeResume_{domain}", span_type="llm", input_data={"domain": domain, "text_length": len(resume_text)}) as span:
+                    if domain == "tech":
+                        analysis = await self._analyze_tech_resume(
+                            resume_text, career_goal_raw, rag_context
+                        )
+                    else:  # medical
+                        analysis = await self._analyze_medical_cv(
+                            resume_text, career_goal_raw, rag_context
+                        )
+                    overall_score = analysis.get("overall_resume_score", 0)
+                    span.set_output({"overall_score": overall_score, "confidence": analysis.get("confidence_level", "medium")})
+                    span.log_metric("resume_score", float(overall_score))
+                    log_feedback(trace_id, "resume_quality", float(overall_score), f"{domain} resume analysis", "llm-judge")
                 
                 # Adjust confidence based on extraction_confidence
                 analysis = self._adjust_confidence_for_extraction(analysis, extraction_confidence)
@@ -467,6 +482,9 @@ class ResumeIntelligenceAgentWorker(AgentWorker):
                 # Calculate execution time
                 execution_time = int((datetime.now() - start_time).total_seconds() * 1000)
                 
+                log_metric(trace_id, "execution_time_ms", float(execution_time))
+                end_trace(trace_id, output={"domain": domain, "score": analysis.get("overall_resume_score", 0)}, status="success")
+                
                 return TaskResult(
                     success=True,
                     output={
@@ -492,10 +510,8 @@ class ResumeIntelligenceAgentWorker(AgentWorker):
             )
             
         except Exception as e:
+            end_trace(trace_id, output={"error": str(e)}, status="error")
             return TaskResult(
-                success=False,
-                error=str(e),
-                summary=f"ResumeIntelligenceAgent error: {str(e)}"
             )
     
     # ============================================
@@ -534,7 +550,7 @@ class ResumeIntelligenceAgentWorker(AgentWorker):
             
             # Add warning to recommendations
             recommendations = analysis.get("recommendations", [])
-            ocr_warning = "⚠️ Resume was extracted using OCR - some information may be inaccurate. Consider uploading a text-based PDF or DOCX for better results."
+            ocr_warning = "[WARN] Resume was extracted using OCR - some information may be inaccurate. Consider uploading a text-based PDF or DOCX for better results."
             if ocr_warning not in recommendations:
                 recommendations.insert(0, ocr_warning)
             analysis["recommendations"] = recommendations
@@ -630,7 +646,7 @@ Output ONLY valid JSON."""
             }
             
         except Exception as e:
-            print(f"⚠️ LLM analysis failed: {e}")
+            print(f"[WARN] LLM analysis failed: {e}")
             return self._get_fallback_tech_analysis(resume_text)
     
     def _calculate_tech_overall_score(
@@ -759,7 +775,7 @@ Output ONLY valid JSON."""
             }
             
         except Exception as e:
-            print(f"⚠️ LLM analysis failed: {e}")
+            print(f"[WARN] LLM analysis failed: {e}")
             return self._get_fallback_medical_analysis(resume_text)
     
     def _calculate_medical_overall_score(
@@ -866,10 +882,10 @@ Output ONLY valid JSON."""
             response = await self.client.post(url, headers=headers, json=payload)
         
         if response.status_code in [200, 201]:
-            print(f"✅ Saved resume analysis for user {user_id}")
+            print(f"[OK] Saved resume analysis for user {user_id}")
             return True
         
-        print(f"❌ Failed to save analysis: {response.text}")
+        print(f"[ERR] Failed to save analysis: {response.text}")
         return False
     
     async def _save_skills(
@@ -977,7 +993,7 @@ Output ONLY valid JSON."""
                 if response.status_code in [200, 201]:
                     saved_count += 1
         
-        print(f"✅ Saved {saved_count} skills for user {user_id}")
+        print(f"[OK] Saved {saved_count} skills for user {user_id}")
         return saved_count
     
     # ============================================

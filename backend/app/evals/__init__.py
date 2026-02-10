@@ -1,5 +1,5 @@
 """
-LearnTube AI - Evaluations Module
+Naviya AI - Evaluations Module
 LLM-as-judge evaluations for learning plan quality
 """
 

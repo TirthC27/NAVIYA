@@ -1,5 +1,5 @@
 """
-LearnTube AI - Routes Package
+Naviya AI - Routes Package
 FastAPI route modules for the API
 """
 

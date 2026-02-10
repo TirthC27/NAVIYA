@@ -1,5 +1,5 @@
 """
-LearnTube AI - Configuration Module
+Naviya AI - Configuration Module
 Loads environment variables directly from .env file
 """
 
@@ -50,7 +50,7 @@ class Settings:
         self.OPIK_PROJECT: str = _read_env_key("OPIK_PROJECT", "Naviya")
         
         # Application Settings
-        self.APP_NAME: str = "LearnTube AI"
+        self.APP_NAME: str = "Naviya AI"
         self.APP_VERSION: str = "2.0.0"
         self.DEBUG: bool = _read_env_key("DEBUG", "False").lower() == "true"
 

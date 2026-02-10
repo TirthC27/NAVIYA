@@ -1,5 +1,5 @@
 """
-LearnTube AI - Database Query Layer
+Naviya AI - Database Query Layer
 Complete CRUD operations for Progressive Learning System
 """
 

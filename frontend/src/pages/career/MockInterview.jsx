@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useDashboardState } from '../../context/DashboardStateContext';
 import useActivityTracker from '../../hooks/useActivityTracker';
+import OpikEvalPopup from '../../components/observability/OpikEvalPopup';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
@@ -95,6 +96,7 @@ const MockInterview = () => {
   const [segments, setSegments] = useState([]);
   const [evaluation, setEvaluation] = useState(null);
   const [expandedQA, setExpandedQA] = useState(null);
+  const [opikEval, setOpikEval] = useState(null);
 
   // Past sessions
   const [pastSessions, setPastSessions] = useState([]);
@@ -118,7 +120,7 @@ const MockInterview = () => {
   // ─── Fetch past sessions ───
   useEffect(() => {
     if (!userId) return;
-    fetch(`${API_BASE}/api/interview/sessions/${userId}`)
+    fetch(`/api/interview/sessions/${userId}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success) setPastSessions(data.sessions || []);
@@ -238,7 +240,7 @@ const MockInterview = () => {
           formData.append('file', blob, 'interview_recording.webm');
           formData.append('user_id', userId);
 
-          const response = await fetch(`${API_BASE}/api/interview/session`, {
+          const response = await fetch(`/api/interview/session`, {
             method: 'POST',
             body: formData,
           });
@@ -254,6 +256,7 @@ const MockInterview = () => {
             setTranscript(data.transcript || '');
             setSegments(data.segments || []);
             setEvaluation(data.evaluation || null);
+            if (data.evaluation?.opik_eval) setOpikEval(data.evaluation.opik_eval);
             setPhase(PHASE.RESULTS);
           } else {
             throw new Error('Server returned unsuccessful response');
@@ -306,7 +309,7 @@ const MockInterview = () => {
     setChatLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/interview/chat`, {
+      const res = await fetch(`/api/interview/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -343,10 +346,10 @@ const MockInterview = () => {
       {/* ─── LiveAvatar Iframe — fills entire screen ─── */}
       {showIframe && (
         <iframe
-          src="https://embed.liveavatar.com/v1/ee19c999-5495-433d-b0f8-a1cfde4e99c9"
+          src="https://embed.liveavatar.com/v1/c22d335d-a583-4071-8af6-c02b7926284b"
           allow="microphone"
-          title="Mock Interview — LiveAvatar"
-          className="absolute inset-0 w-full h-full border-0"
+          title="LiveAvatar Embed"
+          style={{ aspectRatio: '16/9' }}
         />
       )}
 
@@ -803,6 +806,14 @@ const MockInterview = () => {
             )}
           </AnimatePresence>
         </>
+      )}
+
+      {opikEval && (
+        <OpikEvalPopup
+          evaluation={opikEval}
+          agentName="Interview Evaluation"
+          onClose={() => setOpikEval(null)}
+        />
       )}
     </div>
   );

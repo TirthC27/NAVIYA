@@ -3,12 +3,94 @@ AI Agent — sends resume text to OpenRouter (Gemma model) and parses the respon
 Includes retry logic for incomplete/rate-limited responses.
 """
 import json
+import re
 import time
 import requests
 from config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL, MODEL_NAME, SYSTEM_PROMPT
 
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds between retries
+
+# OPIK self-evaluation regex (matches the block appended by the LLM)
+_OPIK_EVAL_RE = re.compile(
+    r"\[OPIK_EVALUATION\](.*?)\[/OPIK_EVALUATION\]",
+    re.DOTALL | re.IGNORECASE,
+)
+
+# Compact self-evaluation instruction appended to the system prompt
+_OPIK_EVAL_SUFFIX = """
+
+--- IMPORTANT: POST-TASK SELF EVALUATION ---
+
+After outputting the JSON above, you MUST append a compact self-evaluation block.
+This is shown to the user as an AI-performance popup — keep it short and non-technical.
+
+FORMAT (use EXACTLY these tags):
+
+[OPIK_EVALUATION]
+
+Task Quality: {High | Medium | Needs Improvement}
+
+Key Strengths:
+- {1 short insight}
+- {1 short insight}
+
+Confidence Level:
+- {Low | Medium | High}
+(Reason: 1 line max)
+
+Alignment With Resume:
+- {Well Aligned | Partially Aligned | Misaligned}
+
+Improvement Suggestion:
+- {One actionable improvement}
+
+Execution Metrics:
+- Response Clarity: {1-5}
+- Personalization Score: {1-5}
+- Relevance Score: {1-5}
+
+[/OPIK_EVALUATION]
+
+RULES: Max 6 bullets. No jargon. Speak like a mentor.
+--- END EVALUATION INSTRUCTIONS ---
+"""
+
+
+def _parse_opik_eval_block(text: str) -> dict:
+    """Parse the [OPIK_EVALUATION] block into a structured dict."""
+    result = {}
+    m = re.search(r"Task Quality:\s*(High|Medium|Needs Improvement)", text, re.I)
+    if m:
+        result["task_quality"] = m.group(1).strip()
+    strengths = []
+    s_block = re.search(r"Key Strengths:\s*\n((?:\s*-\s*.+\n?)+)", text, re.I)
+    if s_block:
+        for line in s_block.group(1).strip().splitlines():
+            line = re.sub(r"^\s*-\s*", "", line).strip()
+            if line:
+                strengths.append(line)
+    result["strengths"] = strengths
+    m = re.search(r"Confidence Level:\s*\n?\s*-?\s*(Low|Medium|High)", text, re.I)
+    if m:
+        result["confidence"] = m.group(1).strip()
+    m_reason = re.search(r"\(Reason:\s*(.+?)\)", text, re.I)
+    if m_reason:
+        result["confidence_reason"] = m_reason.group(1).strip()
+    m = re.search(r"Alignment With Resume:\s*\n?\s*-?\s*(Well Aligned|Partially Aligned|Misaligned)", text, re.I)
+    if m:
+        result["alignment"] = m.group(1).strip()
+    m = re.search(r"Improvement Suggestion:\s*\n?\s*-\s*(.+)", text, re.I)
+    if m:
+        result["improvement"] = m.group(1).strip()
+    metrics = {}
+    for label in ("Response Clarity", "Personalization Score", "Relevance Score"):
+        m = re.search(rf"{label}:\s*(\d)", text, re.I)
+        if m:
+            metrics[label.lower().replace(" ", "_")] = int(m.group(1))
+    if metrics:
+        result["metrics"] = metrics
+    return result
 
 
 def call_gemma(resume_text: str) -> dict:
@@ -33,7 +115,7 @@ def call_gemma(resume_text: str) -> dict:
     payload = {
         "model": MODEL_NAME,
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": SYSTEM_PROMPT + _OPIK_EVAL_SUFFIX},
             {
                 "role": "user",
                 "content": (
@@ -110,11 +192,20 @@ def call_gemma(resume_text: str) -> dict:
         if finish_reason == "length":
             print("  ⚠ Response was truncated (hit token limit).")
 
+        # ── Extract OPIK self-evaluation block (if present) before JSON parsing ──
+        opik_eval = {}
+        eval_match = _OPIK_EVAL_RE.search(content)
+        if eval_match:
+            opik_eval = _parse_opik_eval_block(eval_match.group(1))
+            # Strip the eval block so _extract_json sees clean JSON
+            content = content[:eval_match.start()] + content[eval_match.end():]
+
         # Try to parse JSON
         parsed = _extract_json(content)
 
         # Check if parsing actually succeeded
         if "parse_error" not in parsed:
+            parsed["_opik_eval"] = opik_eval
             return parsed
 
         # JSON parsing failed — retry

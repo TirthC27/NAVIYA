@@ -12,7 +12,7 @@ from app.rag.roadmap import get_learning_roadmap, get_available_topics
 
 async def test():
     print("=" * 60)
-    print("LearnTube AI - RAG Roadmap Module Test")
+    print("Naviya AI - RAG Roadmap Module Test")
     print("=" * 60)
     
     # Test 1: Static knowledge base lookup

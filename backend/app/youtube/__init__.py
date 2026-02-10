@@ -1,5 +1,5 @@
 """
-LearnTube AI - YouTube Module
+Naviya AI - YouTube Module
 YouTube API integration for video data retrieval and processing
 """
 

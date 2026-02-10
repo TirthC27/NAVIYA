@@ -75,15 +75,15 @@ const LearningRoadmaps = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-2xl font-semibold text-slate-800">Learning Paths</h1>
-        <p className="text-slate-500 mt-1">AI-curated video courses tailored to your goals</p>
+        <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">Learning Paths</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1">AI-curated video courses tailored to your goals</p>
       </motion.div>
 
       {/* Main Content Grid */}

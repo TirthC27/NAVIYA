@@ -1,5 +1,5 @@
 """
-LearnTube AI - LLM-as-Judge Evaluations
+Naviya AI - LLM-as-Judge Evaluations
 Automated quality scoring for learning plans using Gemini
 
 Evaluation Dimensions:

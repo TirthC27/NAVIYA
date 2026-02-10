@@ -1,5 +1,5 @@
 """
-LearnTube AI - PII Guard and Safety Module
+Naviya AI - PII Guard and Safety Module
 Detects and blocks unsafe content, PII leakage, and compliance violations
 
 Features:

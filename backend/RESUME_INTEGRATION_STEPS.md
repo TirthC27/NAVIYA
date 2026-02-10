@@ -43,11 +43,11 @@ python -c "import pdfplumber; import docx; print('✅ Dependencies installed suc
 - Check columns: id, user_id, full_name, email, phone, skills, experience, projects, achievements, raw_text, total_skills, created_at, updated_at
 
 ### 3. Restart Backend Server
-```powershell
+```bash
 # Stop current server (Ctrl+C in terminal)
 # Then restart:
-cd c:\Users\chuda\OneDrive\Desktop\NAVIYA\NAVIYA_testing\backend
-.\start_server.bat
+cd backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### 4. Test Resume Upload Endpoint

@@ -1,4 +1,4 @@
-# 📚 Adding Datasets to LearnTube AI
+# 📚 Adding Datasets to Naviya AI
 
 This guide explains where and how to add knowledge to enhance the AI's recommendations.
 
@@ -6,7 +6,7 @@ This guide explains where and how to add knowledge to enhance the AI's recommend
 
 ## 🎯 What Can You Add?
 
-LearnTube AI uses **RAG (Retrieval Augmented Generation)** - you **don't train the model**, but you **enhance its knowledge base**.
+Naviya AI uses **RAG (Retrieval Augmented Generation)** - you **don't train the model**, but you **enhance its knowledge base**.
 
 ---
 

@@ -185,6 +185,38 @@ export const getPromptVersions = async (promptName = null) => {
   return response.data;
 };
 
+/**
+ * Get real-time Opik stats from in-memory trace buffer
+ */
+export const getOpikStats = async () => {
+  const response = await api.get('/api/metrics/opik-stats');
+  return response.data;
+};
+
+/**
+ * Get completed trace history from Opik buffer
+ */
+export const getTraceHistory = async (limit = 50) => {
+  const response = await api.get(`/api/metrics/traces?limit=${limit}`);
+  return response.data;
+};
+
+/**
+ * Get per-agent performance breakdown
+ */
+export const getAgentPerformance = async () => {
+  const response = await api.get('/api/metrics/agent-performance');
+  return response.data;
+};
+
+/**
+ * Get time-series trace data for charts
+ */
+export const getMetricsTimeline = async (hours = 24) => {
+  const response = await api.get(`/api/metrics/timeline?hours=${hours}`);
+  return response.data;
+};
+
 // ============================================
 // Safety API
 // ============================================
@@ -276,6 +308,43 @@ export const llmGenerate = async (prompt, systemPrompt = null) => {
     prompt,
     system_prompt: systemPrompt
   });
+  return response.data;
+};
+
+// ============================================
+// Opik Cloud Observability API
+// ============================================
+
+/**
+ * Get Opik dashboard data (stats + traces + agents + timeline)
+ */
+export const getOpikDashboard = async (projectName = null) => {
+  const params = projectName ? `?project_name=${projectName}` : '';
+  const response = await api.get(`/api/opik/dashboard${params}`);
+  return response.data;
+};
+
+/**
+ * Get Opik Cloud traces
+ */
+export const getOpikCloudTraces = async (page = 1, size = 50) => {
+  const response = await api.get(`/api/opik/traces?page=${page}&size=${size}`);
+  return response.data;
+};
+
+/**
+ * Get Opik Cloud stats
+ */
+export const getOpikCloudStats = async () => {
+  const response = await api.get('/api/opik/stats');
+  return response.data;
+};
+
+/**
+ * Get Opik Cloud projects
+ */
+export const getOpikProjects = async () => {
+  const response = await api.get('/api/opik/projects');
   return response.data;
 };
 

@@ -18,6 +18,7 @@ import ReactFlow, {
   MarkerType,
   Position,
 } from 'reactflow';
+import OpikEvalPopup from '../../components/observability/OpikEvalPopup';
 import 'reactflow/dist/style.css';
 import useActivityTracker from '../../hooks/useActivityTracker';
 
@@ -645,6 +646,7 @@ const CareerRoadmap = () => {
   const [summaryExpanded, setSummaryExpanded] = useState(true);
   const [videoProgress, setVideoProgress] = useState({});
   const [currentRoadmapId, setCurrentRoadmapId] = useState(null);
+  const [opikEval, setOpikEval] = useState(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -755,6 +757,7 @@ const CareerRoadmap = () => {
       const data = await res.json();
       if (data.success && data.roadmap) {
         setRoadmapData(data.roadmap);
+        if (data.opik_eval) setOpikEval(data.opik_eval);
         setSelectedNode(null);
         setNodeVideos({});
         setVideoProgress({});
@@ -994,6 +997,7 @@ const CareerRoadmap = () => {
   const hasCount = roadmapData?.has_count || roadmapData?.nodes?.filter(n => n.status === 'has').length || 0;
 
   return (
+    <>
     <div className="bg-slate-50 dark:bg-slate-950 transition-colors" style={{ height: '100vh', overflow: 'hidden' }}>
       <style>{`
         .react-flow__handle { opacity: 0; }
@@ -1134,6 +1138,15 @@ const CareerRoadmap = () => {
         )}
       </div>
     </div>
+
+    {opikEval && (
+      <OpikEvalPopup
+        evaluation={opikEval}
+        agentName="Skill Roadmap"
+        onClose={() => setOpikEval(null)}
+      />
+    )}
+    </>
   );
 };
 

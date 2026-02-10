@@ -12,7 +12,7 @@ from app.youtube.client import get_videos_for_topic, YouTubeError
 
 async def test():
     print("=" * 60)
-    print("LearnTube AI - YouTube Client Test")
+    print("Naviya AI - YouTube Client Test")
     print("=" * 60)
     
     topic = "BFS Breadth First Search algorithm"

@@ -1,5 +1,5 @@
 """
-LearnTube AI - Main FastAPI Application
+Naviya AI - Main FastAPI Application
 Progressive Learning Agent with adaptive roadmaps
 
 OPIK Integration Features:
@@ -11,12 +11,15 @@ OPIK Integration Features:
 - Supabase database integration
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.types import ASGIApp, Receive, Scope, Send
 from datetime import datetime
 from pydantic import BaseModel
 from typing import Optional, List
 import asyncio
+import json
+import os
 
 from app.config import settings, validate_settings
 from app.agents.llm import call_gemini
@@ -34,6 +37,10 @@ from app.observability.opik_client import (
     get_dashboard_stats,
     get_metrics_buffer,
     clear_metrics_buffer
+)
+from app.observability.request_metrics import (
+    get_opik_metrics,
+    clear_opik_metrics,
 )
 
 # Safety & Evaluations
@@ -64,6 +71,7 @@ from app.routes.skill_assessment_scenario import router as skill_assessment_scen
 from app.routes.activity import router as activity_router
 from app.routes.interview import router as interview_router
 from app.routes.topic_explainer import router as topic_explainer_router
+from app.routes.opik_dashboard import router as opik_dashboard_router
 
 # ============================================
 # Initialize FastAPI application
@@ -86,6 +94,51 @@ AI-powered YouTube learning platform with intelligent agents.
     redoc_url="/redoc"
 )
 
+# ── Opik Metrics Middleware ──────────────────────────
+# Pure ASGI middleware (not BaseHTTPMiddleware) to preserve
+# contextvars set by call_gemini() inside route handlers.
+# Injects X-Opik-* response headers so the frontend can
+# show a real-time performance toast.
+OPIK_HEADERS = [
+    "X-Opik-Agent", "X-Opik-Latency", "X-Opik-Model",
+    "X-Opik-Status", "X-Opik-Prompt-Tokens",
+    "X-Opik-Completion-Tokens", "X-Opik-Total-Tokens",
+    "X-Opik-Trace-Id",
+]
+
+
+class OpikMetricsMiddleware:
+    """Pure ASGI middleware – runs in the same async context as the handler
+    so contextvars set by call_gemini() are visible here."""
+
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                metrics = get_opik_metrics()
+                if metrics:
+                    headers = list(message.get("headers", []))
+                    headers.append((b"x-opik-agent", str(metrics.get("agent", "")).encode()))
+                    headers.append((b"x-opik-latency", str(metrics.get("latency_ms", 0)).encode()))
+                    headers.append((b"x-opik-model", str(metrics.get("model", "")).encode()))
+                    headers.append((b"x-opik-status", str(metrics.get("status", "")).encode()))
+                    headers.append((b"x-opik-prompt-tokens", str(metrics.get("prompt_tokens", 0)).encode()))
+                    headers.append((b"x-opik-completion-tokens", str(metrics.get("completion_tokens", 0)).encode()))
+                    headers.append((b"x-opik-total-tokens", str(metrics.get("total_tokens", 0)).encode()))
+                    headers.append((b"x-opik-trace-id", str(metrics.get("trace_id", "")).encode()))
+                    message["headers"] = headers
+                    clear_opik_metrics()
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
 # Configure CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
@@ -93,7 +146,11 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=OPIK_HEADERS,
 )
+
+# Add Opik metrics middleware (must be added AFTER CORS middleware)
+app.add_middleware(OpikMetricsMiddleware)
 
 # Initialize safety guard
 safety_guard = SafetyGuard(strict_mode=True)
@@ -119,6 +176,7 @@ app.include_router(skill_assessment_scenario_router)  # Already has /api/skill-a
 app.include_router(activity_router)  # Already has /api/activity prefix
 app.include_router(interview_router)  # Already has /api/interview prefix
 app.include_router(topic_explainer_router)  # Already has /api/topic-explainer prefix
+app.include_router(opik_dashboard_router)  # Already has /api/opik prefix
 
 
 # ============================================
@@ -129,9 +187,9 @@ async def startup_event():
     """Initialize OPIK on startup"""
     try:
         init_opik(project_name="Naviya")
-        print("✅ OPIK initialized successfully")
+        print("[OK] OPIK initialized successfully")
     except Exception as e:
-        print(f"⚠️ OPIK running in mock mode: {e}")
+        print(f"[WARN] OPIK running in mock mode: {e}")
 
 
 # ============================================
@@ -611,7 +669,7 @@ async def hackathon_showcase():
     Hackathon showcase endpoint demonstrating all features.
     """
     return {
-        "app_name": "LearnTube AI",
+        "app_name": "Naviya AI",
         "tagline": "Hackathon-Grade Agentic Learning Platform",
         "features": {
             "core": [
@@ -662,13 +720,14 @@ async def hackathon_showcase():
 
 
 # ============================================
-# Main entry point
+# Main entry point (local development)
 # ============================================
 if __name__ == "__main__":
     import uvicorn
+    port = int(os.getenv("PORT", "8000"))
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=True
     )

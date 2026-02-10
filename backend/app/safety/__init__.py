@@ -1,5 +1,5 @@
 """
-LearnTube AI - Safety Module
+Naviya AI - Safety Module
 PII detection and content safety guardrails
 """
 

@@ -1,8 +1,8 @@
-# LearnTube AI - Hackathon-Grade Agentic Learning Platform
+# Naviya AI - Hackathon-Grade Agentic Learning Platform
 
 ## 🚀 Overview
 
-LearnTube AI is an AI-powered YouTube learning platform that generates adaptive learning roadmaps with curated video content. This upgrade transforms it into a **production-grade agentic system** with comprehensive observability, evaluation, and safety features.
+Naviya AI is an AI-powered YouTube learning platform that generates adaptive learning roadmaps with curated video content. This upgrade transforms it into a **production-grade agentic system** with comprehensive observability, evaluation, and safety features.
 
 ## ✨ New Features (OPIK Integration)
 
@@ -266,7 +266,7 @@ Response:
 ```python
 OPIK_API_KEY = "your_api_key"
 OPIK_WORKSPACE = "default"
-OPIK_PROJECT = "LearnTubeAI"
+OPIK_PROJECT = "NaviyaAI"
 ```
 
 ### Safety Thresholds

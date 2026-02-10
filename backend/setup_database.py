@@ -149,7 +149,7 @@ def main():
     
     print(f"1. {GREEN}Setup your features{RESET} using the SQL files")
     print(f"2. {GREEN}Verify setup{RESET}: python verify_database_setup.py")
-    print(f"3. {GREEN}Start backend{RESET}: Run .\start_server.bat")
+    print(f"3. {GREEN}Start backend{RESET}: Run uvicorn app.main:app --host 0.0.0.0 --port 8000")
     print(f"4. {GREEN}Test your app{RESET}: Try registering a user")
     
     print(f"\n{YELLOW}📚 Documentation:{RESET}")

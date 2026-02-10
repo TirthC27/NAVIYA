@@ -24,6 +24,9 @@ from enum import Enum
 
 from app.config import settings
 from app.agents.llm import call_gemini
+from app.observability.opik_client import (
+    start_trace, end_trace, create_span_async, log_metric, log_feedback
+)
 
 
 # ============================================
@@ -144,12 +147,22 @@ class SupervisorAgent:
             SupervisorResult with execution details
         """
         print(f"\n{'='*50}")
-        print(f"🎯 SupervisorAgent starting for user: {user_id}")
+        print(f"[TARGET] SupervisorAgent starting for user: {user_id}")
         print(f"{'='*50}")
+        
+        import time as _time
+        _start = _time.time()
+        trace_id = start_trace(
+            "SupervisorAgent",
+            metadata={"user_id": user_id},
+            tags=["supervisor", "orchestrator"]
+        )
         
         try:
             # Step 1: Fetch user context
-            user_context = await self._fetch_user_context(user_id)
+            async with create_span_async(trace_id, "FetchUserContext", span_type="tool", input_data={"user_id": user_id}) as span:
+                user_context = await self._fetch_user_context(user_id)
+                span.set_output({"found": user_context is not None})
             if not user_context:
                 return SupervisorResult(
                     success=False,
@@ -161,7 +174,7 @@ class SupervisorAgent:
             # Step 2: Validate preconditions
             validation_error = self._validate_preconditions(user_context)
             if validation_error:
-                print(f"⚠️ Validation failed: {validation_error}")
+                print(f"[WARN] Validation failed: {validation_error}")
                 return SupervisorResult(
                     success=False,
                     user_id=user_id,
@@ -172,7 +185,7 @@ class SupervisorAgent:
             # Step 3: Check for existing tasks (idempotency)
             existing_tasks = await self._check_existing_tasks(user_id)
             if existing_tasks:
-                print(f"⚠️ Tasks already exist for user, skipping creation")
+                print(f"[WARN] Tasks already exist for user, skipping creation")
                 return SupervisorResult(
                     success=True,
                     user_id=user_id,
@@ -182,18 +195,23 @@ class SupervisorAgent:
             
             # Step 4: Domain gating
             domain = user_context.get("selected_domain", "")
-            is_supported = domain in SUPPORTED_DOMAINS
+            async with create_span_async(trace_id, "DomainGating", span_type="general", input_data={"domain": domain}) as span:
+                is_supported = domain in SUPPORTED_DOMAINS
+                span.set_output({"supported": is_supported})
             
             if not is_supported:
-                print(f"⚠️ Unsupported domain: {domain}")
+                print(f"[WARN] Unsupported domain: {domain}")
                 return await self._handle_limited_mode(user_id, domain, user_context)
             
-            print(f"✅ Domain supported: {domain}")
+            print(f"[OK] Domain supported: {domain}")
             
             # Step 5: Normalize career goal
             career_goal_raw = user_context.get("career_goal_raw", "")
-            normalized_goal = await self._normalize_goal(career_goal_raw, domain)
-            print(f"✅ Normalized goal: {normalized_goal.primary_track} ({normalized_goal.confidence})")
+            async with create_span_async(trace_id, "GoalNormalization", span_type="llm", input_data={"career_goal_raw": career_goal_raw, "domain": domain}) as span:
+                normalized_goal = await self._normalize_goal(career_goal_raw, domain)
+                span.set_output({"primary_track": normalized_goal.primary_track, "confidence": normalized_goal.confidence})
+                span.log_metric("goal_confidence", float(hash(normalized_goal.confidence) % 100) / 100)
+            print(f"[OK] Normalized goal: {normalized_goal.primary_track} ({normalized_goal.confidence})")
             
             # Step 6: Assign initial phase
             current_phase = "exploration"
@@ -206,15 +224,23 @@ class SupervisorAgent:
             )
             
             # Step 8: Create tasks based on domain
-            tasks_created = await self._create_domain_tasks(
-                user_id, domain, normalized_goal.dict(), current_phase
-            )
+            async with create_span_async(trace_id, "CreateDomainTasks", span_type="tool", input_data={"domain": domain, "phase": current_phase}) as span:
+                tasks_created = await self._create_domain_tasks(
+                    user_id, domain, normalized_goal.dict(), current_phase
+                )
+                span.set_output({"tasks_created": len(tasks_created)})
+                log_metric(trace_id, "tasks_created", float(len(tasks_created)))
             
             # Step 9: Mark supervisor as initialized
             await self._mark_supervisor_initialized(user_id)
             
-            print(f"\n✅ SupervisorAgent completed successfully")
+            print(f"\n[OK] SupervisorAgent completed successfully")
             print(f"   Tasks created: {len(tasks_created)}")
+            
+            _duration = _time.time() - _start
+            log_metric(trace_id, "total_duration_s", _duration)
+            log_feedback(trace_id, "supervisor_success", 10.0, f"Created {len(tasks_created)} tasks for {domain}", "system")
+            end_trace(trace_id, output={"tasks_created": len(tasks_created), "domain": domain, "phase": current_phase}, status="success")
             
             return SupervisorResult(
                 success=True,
@@ -227,7 +253,8 @@ class SupervisorAgent:
             )
             
         except Exception as e:
-            print(f"❌ SupervisorAgent error: {str(e)}")
+            print(f"[ERR] SupervisorAgent error: {str(e)}")
+            end_trace(trace_id, output={"error": str(e)}, status="error")
             await self._log_error(user_id, str(e))
             return SupervisorResult(
                 success=False,
@@ -248,10 +275,10 @@ class SupervisorAgent:
         if response.status_code == 200:
             data = response.json()
             if data and len(data) > 0:
-                print(f"✅ Fetched user context")
+                print(f"[OK] Fetched user context")
                 return data[0]
         
-        print(f"❌ Failed to fetch user context: {response.text}")
+        print(f"[ERR] Failed to fetch user context: {response.text}")
         return None
     
     async def _check_existing_tasks(self, user_id: str) -> bool:
@@ -302,7 +329,7 @@ class SupervisorAgent:
         user_context: Dict
     ) -> SupervisorResult:
         """Handle unsupported domain - create limited mode task only"""
-        print(f"🔒 Entering limited mode for domain: {domain}")
+        print(f"[LOCK] Entering limited mode for domain: {domain}")
         
         # Create minimal normalized goal
         normalized_goal = NormalizedGoal(
@@ -336,7 +363,7 @@ class SupervisorAgent:
         await self._insert_task(task)
         await self._mark_supervisor_initialized(user_id)
         
-        print(f"✅ Limited mode task created")
+        print(f"[OK] Limited mode task created")
         
         return SupervisorResult(
             success=True,
@@ -429,7 +456,7 @@ Track:"""
                     confidence=Confidence.MEDIUM
                 )
         except Exception as e:
-            print(f"⚠️ LLM normalization failed: {e}")
+            print(f"[WARN] LLM normalization failed: {e}")
         
         # Fallback to generic track
         return NormalizedGoal(
@@ -523,10 +550,10 @@ Track:"""
         )
         
         if response.status_code in [200, 201]:
-            print(f"   ✅ Created: {task.agent_name} → {task.task_type}")
+            print(f"   [OK] Created: {task.agent_name} -> {task.task_type}")
             return True
         else:
-            print(f"   ❌ Failed: {task.agent_name} - {response.text}")
+            print(f"   [ERR] Failed: {task.agent_name} - {response.text}")
             return False
     
     # ============================================
@@ -551,9 +578,9 @@ Track:"""
         if update_data:
             response = await self.client.patch(url, headers=get_headers(), json=update_data)
             if response.status_code in [200, 204]:
-                print(f"✅ Updated user_context")
+                print(f"[OK] Updated user_context")
             else:
-                print(f"⚠️ Failed to update user_context: {response.text}")
+                print(f"[WARN] Failed to update user_context: {response.text}")
     
     async def _mark_supervisor_initialized(self, user_id: str):
         """Mark supervisor_initialized = true"""
@@ -566,9 +593,9 @@ Track:"""
         )
         
         if response.status_code in [200, 204]:
-            print(f"✅ Marked supervisor_initialized = true")
+            print(f"[OK] Marked supervisor_initialized = true")
         else:
-            print(f"⚠️ Failed to mark initialized: {response.text}")
+            print(f"[WARN] Failed to mark initialized: {response.text}")
     
     # ============================================
     # Error Logging
@@ -587,7 +614,7 @@ Track:"""
         try:
             await self._insert_task(task)
         except Exception as e:
-            print(f"❌ Failed to log error: {e}")
+            print(f"[ERR] Failed to log error: {e}")
 
 
 # ============================================

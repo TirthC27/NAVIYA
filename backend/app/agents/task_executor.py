@@ -162,7 +162,7 @@ class TaskExecutor:
             return None
             
         except Exception as e:
-            print(f"❌ Error polling tasks: {str(e)}")
+            print(f"[ERR] Error polling tasks: {str(e)}")
             return None
     
     async def poll_all_pending_tasks(self, agent_name: str, limit: int = 10) -> List[AgentTask]:
@@ -195,7 +195,7 @@ class TaskExecutor:
             return []
             
         except Exception as e:
-            print(f"❌ Error polling tasks: {str(e)}")
+            print(f"[ERR] Error polling tasks: {str(e)}")
             return []
     
     # ============================================
@@ -233,7 +233,7 @@ class TaskExecutor:
             return False
             
         except Exception as e:
-            print(f"❌ Error locking task: {str(e)}")
+            print(f"[ERR] Error locking task: {str(e)}")
             return False
     
     async def complete_task(self, task_id: str, result: Dict[str, Any]) -> bool:
@@ -262,7 +262,7 @@ class TaskExecutor:
             return response.status_code == 200
             
         except Exception as e:
-            print(f"❌ Error completing task: {str(e)}")
+            print(f"[ERR] Error completing task: {str(e)}")
             return False
     
     async def fail_task(self, task_id: str, error_message: str) -> bool:
@@ -291,7 +291,7 @@ class TaskExecutor:
             return response.status_code == 200
             
         except Exception as e:
-            print(f"❌ Error failing task: {str(e)}")
+            print(f"[ERR] Error failing task: {str(e)}")
             return False
     
     # ============================================
@@ -378,15 +378,15 @@ class TaskExecutor:
         Returns:
             True if task was processed successfully
         """
-        print(f"\n🔧 Processing task: {task.agent_name} → {task.task_type}")
+        print(f"\n[TASK] Processing task: {task.agent_name} -> {task.task_type}")
         
         # Step 1: Lock the task
         locked = await self.try_lock_task(task.id)
         if not locked:
-            print(f"   ⚠️ Could not lock task (already running or completed)")
+            print(f"   [WARN] Could not lock task (already running or completed)")
             return False
         
-        print(f"   🔒 Task locked")
+        print(f"   [LOCK] Task locked")
         
         # Step 2: Execute
         start_time = time.time()
@@ -396,10 +396,10 @@ class TaskExecutor:
         # Step 3: Update status
         if result.success:
             await self.complete_task(task.id, result.output)
-            print(f"   ✅ Task completed ({execution_time_ms}ms)")
+            print(f"   [OK] Task completed ({execution_time_ms}ms)")
         else:
             await self.fail_task(task.id, result.error or "Unknown error")
-            print(f"   ❌ Task failed: {result.error}")
+            print(f"   [ERR] Task failed: {result.error}")
         
         # Step 4: Log activity
         await self.log_activity(ActivityLogEntry(
@@ -442,11 +442,11 @@ class TaskExecutor:
                 return True
             else:
                 # Don't fail if logging fails - just warn
-                print(f"   ⚠️ Failed to log activity: {response.text}")
+                print(f"   [WARN] Failed to log activity: {response.text}")
                 return False
                 
         except Exception as e:
-            print(f"   ⚠️ Failed to log activity: {str(e)}")
+            print(f"   [WARN] Failed to log activity: {str(e)}")
             return False
     
     # ============================================
@@ -501,12 +501,12 @@ class TaskExecutor:
                     error_details="Execution timeout"
                 ))
                 
-                print(f"⏰ Timed out task: {task['agent_name']} → {task['task_type']}")
+                print(f"[TIMEOUT] Timed out task: {task['agent_name']} -> {task['task_type']}")
             
             return len(stale_tasks)
             
         except Exception as e:
-            print(f"❌ Error timing out tasks: {str(e)}")
+            print(f"[ERR] Error timing out tasks: {str(e)}")
             return 0
 
 

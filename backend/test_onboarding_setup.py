@@ -107,7 +107,7 @@ async def test_onboarding_save():
                 
     except httpx.ConnectError:
         print(f"{RED}❌ Cannot connect to backend{RESET}")
-        print(f"{YELLOW}💡 Make sure backend is running: .\\start_server.bat{RESET}")
+        print(f"{YELLOW}💡 Make sure backend is running: uvicorn app.main:app --host 0.0.0.0 --port 8000{RESET}")
         return False, None
     except Exception as e:
         print(f"{RED}❌ Error: {str(e)}{RESET}")

@@ -19,6 +19,9 @@ import httpx
 
 from app.config import settings
 from app.services.dashboard_state import get_dashboard_state_service
+from app.observability.opik_client import (
+    start_trace, end_trace, create_span_async, log_metric, log_feedback
+)
 
 # ============================================
 # Import the existing resume agent
@@ -224,6 +227,13 @@ async def upload_resume(
         tmp.write(content)
         tmp_path = tmp.name
 
+    # Start Opik trace for resume analysis
+    trace_id = start_trace(
+        "ResumeAnalysis",
+        metadata={"user_id": user_id, "filename": file.filename, "file_size": len(content)},
+        tags=["resume", "upload", "analysis"]
+    )
+
     try:
         # ── 1. Extract raw text using existing agent's readers ──
         if ext == "pdf":
@@ -234,20 +244,29 @@ async def upload_resume(
             raw_text = open(tmp_path, "r", encoding="utf-8", errors="ignore").read()
 
         if len(raw_text.strip()) < 20:
+            end_trace(trace_id, output={"error": "Insufficient text"}, status="error")
             raise HTTPException(
                 status_code=400,
                 detail="Could not extract enough text from file. Please ensure the file is readable."
             )
 
+        log_metric(trace_id, "text_length", len(raw_text))
+
         # ── 2. Call existing resume agent (sync → run in executor) ──
         llm_raw: dict = {}
-        try:
-            loop = asyncio.get_event_loop()
-            llm_raw = await loop.run_in_executor(None, call_gemma, raw_text)
-            print(f"[Resume Agent] Extracted keys: {list(llm_raw.keys())}")
-        except Exception as e:
-            print(f"[Resume Agent] call_gemma failed: {e}")
-            llm_raw = {}
+        async with create_span_async(trace_id, "LLM_Analysis", span_type="llm", input_data={"text_length": len(raw_text)}) as llm_span:
+            try:
+                loop = asyncio.get_event_loop()
+                llm_raw = await loop.run_in_executor(None, call_gemma, raw_text)
+                print(f"[Resume Agent] Extracted keys: {list(llm_raw.keys())}")
+                llm_span.set_output({"keys": list(llm_raw.keys()), "success": True})
+            except Exception as e:
+                print(f"[Resume Agent] call_gemma failed: {e}")
+                llm_span.set_output({"error": str(e), "success": False})
+                llm_raw = {}
+
+        # ── Extract OPIK self-evaluation if present ──
+        opik_eval = llm_raw.pop("_opik_eval", None) or {}
 
         # ── 3. Map agent output → DB-friendly structure ──
         mapped = map_agent_output(llm_raw)
@@ -277,6 +296,9 @@ async def upload_resume(
 
         status = "analyzed" if llm_raw else "parsed"
 
+        log_metric(trace_id, "skills_count", len(flat_skills))
+        log_metric(trace_id, "status", 1.0 if status == "analyzed" else 0.0)
+
         # ── 4. Build DB payload ──
         data = {
             "user_id": user_id,
@@ -302,7 +324,8 @@ async def upload_resume(
         }
 
         # ── 5. Upsert to resume_data ──
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with create_span_async(trace_id, "DB_Save", span_type="tool", input_data={"user_id": user_id}) as db_span:
+          async with httpx.AsyncClient(timeout=60.0) as client:
             check_url = f"{SUPABASE_REST_URL}/resume_data?user_id=eq.{user_id}"
             check_response = await client.get(check_url, headers=get_headers())
 
@@ -315,10 +338,12 @@ async def upload_resume(
 
             if response.status_code not in [200, 201]:
                 print(f"[Resume DB] Save failed: {response.text}")
+                db_span.set_output({"error": response.text})
                 raise HTTPException(
                     status_code=500,
                     detail="Failed to save to database. Please check Supabase configuration."
                 )
+            db_span.set_output({"success": True})
 
         # ── 6. Populate user_skills table ──
         skills_saved = 0
@@ -428,6 +453,17 @@ async def upload_resume(
         except Exception:
             pass
 
+        # Score the resume quality for Opik feedback
+        resume_score = min(10, max(1, len(flat_skills) / 3))
+        log_feedback(trace_id, "resume_quality", resume_score, reason=f"{len(flat_skills)} skills extracted", evaluator="auto")
+        log_metric(trace_id, "execution_time_ms", 0)  # will be overridden by trace duration
+
+        end_trace(
+            trace_id,
+            output={"skills_count": len(flat_skills), "status": status, "name": name},
+            status="success"
+        )
+
         return {
             "success": True,
             "name": name,
@@ -446,9 +482,16 @@ async def upload_resume(
             "summary": summary,
             "status": status,
             "message": f"Resume uploaded and analyzed! Found {len(flat_skills)} skills via AI."
-                if llm_raw else "Resume uploaded. Text extracted but AI analysis unavailable."
+                if llm_raw else "Resume uploaded. Text extracted but AI analysis unavailable.",
+            "opik_eval": opik_eval if opik_eval else None
         }
 
+    except HTTPException:
+        end_trace(trace_id, output={"error": "HTTP error"}, status="error")
+        raise
+    except Exception as e:
+        end_trace(trace_id, output={"error": str(e)}, status="error")
+        raise
     finally:
         os.unlink(tmp_path)
 

@@ -1,5 +1,5 @@
 """
-LearnTube AI - Agents Module
+Naviya AI - Agents Module
 LangGraph-based agent orchestration for intelligent learning workflows
 """
 

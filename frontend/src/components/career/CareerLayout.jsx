@@ -62,7 +62,7 @@ const careerNavItems = [
   { 
     path: '/career/alumni', 
     icon: Presentation, 
-    label: 'Topic Explainer',
+    label: 'PPT Explainer',
     description: 'Upload resume to unlock',
     requiresResume: true
   },

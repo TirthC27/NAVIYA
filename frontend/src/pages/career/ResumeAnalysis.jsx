@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useDashboardState } from '../../context/DashboardStateContext';
 import useActivityTracker from '../../hooks/useActivityTracker';
+import OpikEvalPopup from '../../components/observability/OpikEvalPopup';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
@@ -48,6 +49,7 @@ const ResumeAnalysis = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [opikEval, setOpikEval] = useState(null);
   
   // Social links editing state
   const [editingSocial, setEditingSocial] = useState(false);
@@ -140,6 +142,11 @@ const ResumeAnalysis = () => {
         const result = await response.json();
         setSuccessMessage(`✅ Resume analyzed! Found ${result.skills_count || 0} skills via AI`);
         
+        // Show OPIK self-evaluation popup if present
+        if (result.opik_eval) {
+          setOpikEval(result.opik_eval);
+        }
+        
         // Refresh resume data
         const dataResponse = await fetch(`${API_BASE}/api/resume-simple/data/${userId}`);
         if (dataResponse.ok) {
@@ -222,6 +229,7 @@ const ResumeAnalysis = () => {
   const socialLinks = resumeData?.social_links || {};
 
   return (
+    <>
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors">
       {/* Header */}
       <motion.div
@@ -664,6 +672,12 @@ const ResumeAnalysis = () => {
         </motion.div>
       )}
     </div>
+    <OpikEvalPopup
+      evaluation={opikEval}
+      agentName="Resume Analysis"
+      onClose={() => setOpikEval(null)}
+    />
+    </>
   );
 };
 

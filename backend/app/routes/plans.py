@@ -1,5 +1,5 @@
 """
-LearnTube AI - Plans Routes
+Naviya AI - Plans Routes
 FastAPI endpoints for learning plan management
 """
 

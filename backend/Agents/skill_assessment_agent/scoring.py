@@ -83,7 +83,7 @@ def score_actions(
             weight = rule.get("weight", 1.0)
             categories[cat]["possible"] += weight
             categories[cat]["details"].append(
-                f"❌ Violated: {rule['label']} (action: {action_info.get('label', aid)})"
+                f"[ERR] Violated: {rule['label']} (action: {action_info.get('label', aid)})"
             )
             action_result["violated"].append({"rule": rule["label"], "penalty": weight})
 
@@ -108,7 +108,7 @@ def score_actions(
         if cid not in action_ids:
             categories["risk_awareness"]["possible"] += 2.0
             categories["risk_awareness"]["details"].append(
-                f"⚠️ Skipped critical action: {available_actions.get(cid, {}).get('label', cid)}"
+                f"[WARN] Skipped critical action: {available_actions.get(cid, {}).get('label', cid)}"
             )
 
     # ---------- STRESS / TIME scoring ----------

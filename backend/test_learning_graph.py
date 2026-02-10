@@ -13,7 +13,7 @@ from app.agents.learning_graph import generate_learning_plan
 
 async def test():
     print("=" * 60)
-    print("LearnTube AI - LangGraph Learning Plan Test")
+    print("Naviya AI - LangGraph Learning Plan Test")
     print("=" * 60)
     
     user_topic = "Graph Algorithms"

@@ -26,6 +26,10 @@ from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.agents.llm import call_gemini, LLMError
+from app.observability.opik_client import (
+    start_trace, end_trace, create_span_async, log_metric, log_feedback
+)
+from app.llm.opik_eval_prompt import inject_opik_eval, parse_opik_eval, log_opik_eval
 
 
 # ============================================
@@ -67,6 +71,7 @@ class InterviewEvaluation(BaseModel):
     confidence_score: int = Field(..., ge=0, le=10)
     recommendation: str
     evaluated_at: str
+    opik_eval: Optional[Dict[str, Any]] = None
 
 
 # ============================================
@@ -213,6 +218,12 @@ async def evaluate_interview(
     if not session_id:
         session_id = str(uuid.uuid4())
 
+    trace_id = start_trace(
+        "InterviewEvaluationAgent",
+        metadata={"user_id": user_id, "session_id": session_id, "segments": len(transcript_segments)},
+        tags=["interview", "evaluation"]
+    )
+
     # Parse Q&A pairs
     qa_pairs = parse_transcript_to_qa_pairs(transcript_segments)
 
@@ -241,10 +252,18 @@ Provide your evaluation as JSON following the exact format specified."""
 
     # Call LLM
     try:
-        raw_response = await call_gemini(
-            prompt=prompt,
-            system_prompt=INTERVIEW_EVAL_SYSTEM_PROMPT
-        )
+        async with create_span_async(trace_id, "LLM_InterviewEval", span_type="llm", input_data={"qa_pairs": len(qa_pairs)}) as span:
+            augmented_prompt = inject_opik_eval(INTERVIEW_EVAL_SYSTEM_PROMPT, agent_type="InterviewEvaluation")
+            full_response = await call_gemini(
+                prompt=prompt,
+                system_prompt=augmented_prompt
+            )
+            eval_result = parse_opik_eval(full_response)
+            raw_response = eval_result["content"]
+            opik_evaluation = eval_result["evaluation"] if eval_result["has_eval"] else None
+            if opik_evaluation:
+                log_opik_eval(trace_id, opik_evaluation)
+            span.set_output({"response_length": len(raw_response), "has_opik_eval": eval_result["has_eval"]})
 
         # Parse JSON from response
         # Strip markdown code fences if present
@@ -261,6 +280,7 @@ Provide your evaluation as JSON following the exact format specified."""
 
     except (json.JSONDecodeError, LLMError) as e:
         print(f"[InterviewEval] LLM error or parse error: {e}")
+        end_trace(trace_id, output={"error": str(e)}, status="error")
         # Return a fallback evaluation
         return InterviewEvaluation(
             session_id=session_id,
@@ -306,7 +326,13 @@ Provide your evaluation as JSON following the exact format specified."""
     else:
         rating = "Poor"
 
-    return InterviewEvaluation(
+    log_metric(trace_id, "overall_score", float(overall_score))
+    log_metric(trace_id, "communication_score", float(min(10, max(0, int(eval_data.get("communication_score", 0))))))
+    log_metric(trace_id, "technical_score", float(min(10, max(0, int(eval_data.get("technical_score", 0))))))
+    log_feedback(trace_id, "interview_quality", float(overall_score / 10), rating, "llm-judge")
+    end_trace(trace_id, output={"overall_score": overall_score, "rating": rating, "questions": len(qa_evals)}, status="success")
+
+    evaluation = InterviewEvaluation(
         session_id=session_id,
         user_id=user_id,
         overall_score=overall_score,
@@ -320,5 +346,8 @@ Provide your evaluation as JSON following the exact format specified."""
         technical_score=min(10, max(0, int(eval_data.get("technical_score", 0)))),
         confidence_score=min(10, max(0, int(eval_data.get("confidence_score", 0)))),
         recommendation=eval_data.get("recommendation", ""),
-        evaluated_at=datetime.utcnow().isoformat()
+        evaluated_at=datetime.utcnow().isoformat(),
+        opik_eval=opik_evaluation
     )
+
+    return evaluation

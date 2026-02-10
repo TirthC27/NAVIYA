@@ -1,5 +1,5 @@
 """
-LearnTube AI - OPIK Integration Test
+Naviya AI - OPIK Integration Test
 Verifies all OPIK features are working correctly
 """
 
@@ -10,7 +10,7 @@ sys.path.insert(0, '.')
 async def test_opik_integration():
     """Test all OPIK integration features"""
     print("\n" + "="*60)
-    print("LearnTube AI - OPIK Integration Test")
+    print("Naviya AI - OPIK Integration Test")
     print("="*60 + "\n")
     
     # Test 1: OPIK Client Import
@@ -33,7 +33,7 @@ async def test_opik_integration():
     # Test 2: Initialize OPIK
     print("\n[TEST 2] Initializing OPIK...")
     try:
-        result = init_opik(project_name="LearnTubeAI-Test")
+        result = init_opik(project_name="NaviyaAI-Test")
         print(f"  ✅ OPIK initialized (OPIK available: {result})")
     except Exception as e:
         print(f"  ❌ Init failed: {e}")

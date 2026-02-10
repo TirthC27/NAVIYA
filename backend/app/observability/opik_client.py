@@ -1,5 +1,5 @@
 """
-LearnTube AI - OPIK Client for Observability
+Naviya AI - OPIK Client for Observability
 Provides tracing, metrics, and feedback logging capabilities
 
 Features:
@@ -28,7 +28,7 @@ try:
     OPIK_AVAILABLE = True
 except ImportError:
     OPIK_AVAILABLE = False
-    print("⚠️ OPIK not installed. Running without observability.")
+    print("[WARN] OPIK not installed. Running without observability.")
 
 
 # ============================================
@@ -80,7 +80,7 @@ def init_opik(
     )
     
     if not OPIK_AVAILABLE:
-        print(f"📊 OPIK not available - running in mock mode for {project_name}")
+        print(f"[OPIK] Not available - running in mock mode for {project_name}")
         return False
     
     try:
@@ -93,12 +93,12 @@ def init_opik(
         
         _opik_client = Opik(project_name=project_name)
         
-        print(f"✅ OPIK initialized for project: {project_name}")
+        print(f"[OPIK] Initialized for project: {project_name}")
         print(f"   Workspace: {_config.workspace}")
         return True
         
     except Exception as e:
-        print(f"⚠️ OPIK initialization failed: {e}")
+        print(f"[WARN] OPIK initialization failed: {e}")
         print("   Running in mock mode - metrics will be logged locally")
         return False
 
@@ -149,7 +149,7 @@ def start_trace(
     _active_traces[trace_id] = trace_data
     
     if _config and _config.log_to_console:
-        print(f"🔍 Trace Started: {run_name} [{trace_id[:8]}...]")
+        print(f"[TRACE] Started: {run_name} [{trace_id[:8]}...]")
     
     # If OPIK is available, create actual trace
     if is_opik_enabled():
@@ -161,7 +161,7 @@ def start_trace(
             )
             trace_data["opik_trace"] = trace
         except Exception as e:
-            print(f"⚠️ Failed to create OPIK trace: {e}")
+            print(f"[WARN] Failed to create OPIK trace: {e}")
     
     return trace_id
 
@@ -192,7 +192,7 @@ def end_trace(
     trace_data["output"] = output
     
     if _config and _config.log_to_console:
-        print(f"✅ Trace Ended: {trace_data['name']} [{trace_id[:8]}...]")
+        print(f"[TRACE] Ended: {trace_data['name']} [{trace_id[:8]}...]")
         print(f"   Duration: {trace_data['duration']:.2f}s | Status: {status}")
         print(f"   Spans: {len(trace_data['spans'])} | Metrics: {len(trace_data['metrics'])}")
     
@@ -204,10 +204,23 @@ def end_trace(
                 metadata={"status": status, "duration_seconds": trace_data["duration"]}
             )
         except Exception as e:
-            print(f"⚠️ Failed to end OPIK trace: {e}")
+            print(f"[WARN] Failed to end OPIK trace: {e}")
     
-    # Store to buffer for batch processing
-    _metrics_buffer.append(trace_data.copy())
+    # Store to buffer for batch processing (strip non-serializable SDK objects)
+    safe_copy = {}
+    for k, v in trace_data.items():
+        if k == "opik_trace":
+            continue  # skip SDK object (_thread.RLock, etc.)
+        if k == "spans":
+            # Strip any opik_span objects from span data
+            safe_spans = []
+            for sp in v:
+                safe_span = {sk: sv for sk, sv in sp.items() if sk != "opik_span"} if isinstance(sp, dict) else sp
+                safe_spans.append(safe_span)
+            safe_copy[k] = safe_spans
+        else:
+            safe_copy[k] = v
+    _metrics_buffer.append(safe_copy)
     
     # Remove from active traces
     del _active_traces[trace_id]
@@ -273,7 +286,7 @@ def create_span(
                     input=input_data
                 )
             except Exception as e:
-                print(f"⚠️ Failed to create OPIK span: {e}")
+                print(f"[WARN] Failed to create OPIK span: {e}")
     
     class SpanContext:
         def __init__(self):
@@ -301,9 +314,9 @@ def create_span(
         span_data["duration"] = end_time - start_time
         
         if _config and _config.log_to_console:
-            # Show ✅ if no error, ❌ only if there's an actual error
+            # Show status indicator for error vs success
             has_error = span_data.get("error") is not None
-            status = "❌" if has_error else "✅"
+            status = "[ERR]" if has_error else "[OK]"
             print(f"   {status} Span: {span_name} ({span_data['duration']:.3f}s)")
         
         # End OPIK span
@@ -363,7 +376,7 @@ async def create_span_async(
                     input=input_data
                 )
             except Exception as e:
-                print(f"⚠️ Failed to create OPIK span: {e}")
+                print(f"[WARN] Failed to create OPIK span: {e}")
     
     class SpanContext:
         def __init__(self):
@@ -391,9 +404,9 @@ async def create_span_async(
         span_data["duration"] = end_time - start_time
         
         if _config and _config.log_to_console:
-            # Show ✅ if no error, ❌ only if there's an actual error
+            # Show status indicator for error vs success
             has_error = span_data.get("error") is not None
-            status = "❌" if has_error else "✅"
+            status = "[ERR]" if has_error else "[OK]"
             print(f"   {status} Span: {span_name} ({span_data['duration']:.3f}s)")
         
         if opik_span:
@@ -434,7 +447,7 @@ def log_metric(
         metadata: Additional context
     """
     if trace_id not in _active_traces:
-        print(f"⚠️ Cannot log metric - trace {trace_id} not found")
+        print(f"[WARN] Cannot log metric - trace {trace_id} not found")
         return
     
     metric_entry = {
@@ -447,7 +460,7 @@ def log_metric(
     _active_traces[trace_id]["metrics"][name] = metric_entry
     
     if _config and _config.log_to_console:
-        print(f"   📊 Metric: {name} = {value}")
+        print(f"   [METRIC] {name} = {value}")
     
     # Log to OPIK if available
     if is_opik_enabled() and "opik_trace" in _active_traces[trace_id]:
@@ -482,7 +495,7 @@ def log_feedback(
         evaluator: Who provided the feedback (human, llm-judge, system)
     """
     if trace_id not in _active_traces:
-        print(f"⚠️ Cannot log feedback - trace {trace_id} not found")
+        print(f"[WARN] Cannot log feedback - trace {trace_id} not found")
         return
     
     feedback_entry = {
@@ -496,7 +509,7 @@ def log_feedback(
     _active_traces[trace_id]["feedback"].append(feedback_entry)
     
     if _config and _config.log_to_console:
-        print(f"   🎯 Feedback: {label} = {score}/10 ({evaluator})")
+        print(f"   [FEEDBACK] {label} = {score}/10 ({evaluator})")
     
     # Log to OPIK if available
     if is_opik_enabled() and "opik_trace" in _active_traces[trace_id]:
@@ -699,3 +712,4 @@ def get_dashboard_stats() -> Dict[str, Any]:
         "avg_scores": avg_scores,
         "active_traces": len(_active_traces)
     }
+

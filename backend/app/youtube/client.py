@@ -1,5 +1,5 @@
 """
-LearnTube AI - YouTube Client
+Naviya AI - YouTube Client
 Fetches ONE best video per learning step with strict quality filters
 """
 
@@ -204,7 +204,7 @@ async def fetch_single_best_video(query: str) -> Optional[Dict]:
         video_ids = await search_videos(query, max_results=15)
         
         if not video_ids:
-            print(f"⚠️ No videos found for: {query}")
+            print(f"[WARN] No videos found for: {query}")
             return None
         
         # Get detailed metadata
@@ -235,19 +235,19 @@ async def fetch_single_best_video(query: str) -> Optional[Dict]:
                     valid_videos.append(video)
         
         if not valid_videos:
-            print(f"⚠️ No valid videos after filtering for: {query}")
+            print(f"[WARN] No valid videos after filtering for: {query}")
             return None
         
         # Sort by score and return the best one
         valid_videos.sort(key=lambda x: x["quality_score"], reverse=True)
         best_video = valid_videos[0]
         
-        print(f"✅ Best video for '{query}': {best_video['title'][:50]}... (score: {best_video['quality_score']:.1f})")
+        print(f"[OK] Best video for '{query}': {best_video['title'][:50]}... (score: {best_video['quality_score']:.1f})")
         
         return best_video
         
     except Exception as e:
-        print(f"❌ Error fetching video for '{query}': {e}")
+        print(f"[ERR] Error fetching video for '{query}': {e}")
         raise YouTubeError(f"Failed to fetch video: {str(e)}")
 
 

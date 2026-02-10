@@ -1,3 +1,3 @@
 """
-LearnTube AI Backend Application
+Naviya AI Backend Application
 """

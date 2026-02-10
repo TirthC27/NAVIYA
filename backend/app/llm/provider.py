@@ -293,7 +293,7 @@ class LLMProvider:
         }
         self._request_log.append(log_entry)
         
-        status = "✓" if response.success else "✗"
+        status = "OK" if response.success else "FAIL"
         print(f"[LLM] Response {request_id[:8]} | {status} | {response.latency_ms:.0f}ms")
     
     def get_request_log(self) -> List[Dict]:

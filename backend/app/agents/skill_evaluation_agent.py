@@ -26,6 +26,7 @@ import httpx
 
 from app.config import settings
 from app.llm.provider import get_llm_provider, LLMConfig, LLMModel
+from app.llm.opik_eval_prompt import inject_opik_eval, parse_opik_eval, log_opik_eval
 from app.services.dashboard_state import get_dashboard_state_service
 
 
@@ -659,7 +660,9 @@ Output ONLY the JSON evaluation."""
         system_prompt: str,
         temperature: float = 0.7
     ) -> str:
-        """Call LLM via LLMProvider"""
+        """Call LLM via LLMProvider with OPIK self-evaluation"""
+        
+        augmented_prompt = inject_opik_eval(system_prompt, agent_type="SkillAssessment")
         
         config = LLMConfig(
             model=LLMModel.GEMMA_7B.value,
@@ -669,7 +672,7 @@ Output ONLY the JSON evaluation."""
         
         response = await self.llm_provider.complete(
             agent_name=self.agent_name,
-            system_prompt=system_prompt,
+            system_prompt=augmented_prompt,
             user_prompt=prompt,
             config=config
         )
@@ -677,7 +680,10 @@ Output ONLY the JSON evaluation."""
         if not response.success:
             raise Exception(f"LLM API error: {response.error}")
         
-        return response.content
+        # Parse and strip OPIK evaluation from content
+        eval_result = parse_opik_eval(response.content)
+        self._last_opik_eval = eval_result.get("evaluation", {})
+        return eval_result["content"]
     
     def _parse_llm_response(self, response: str) -> Optional[Dict]:
         """Parse LLM response as JSON"""

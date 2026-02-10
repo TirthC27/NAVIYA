@@ -81,7 +81,7 @@ This will show you which features are installed.
 
 ```bash
 cd backend
-.\start_server.bat
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 The server should start without errors on http://localhost:8000

@@ -1,5 +1,5 @@
 """
-LearnTube AI - Database Module
+Naviya AI - Database Module
 Supabase integration for data persistence
 """
 

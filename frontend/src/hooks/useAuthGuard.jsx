@@ -101,10 +101,10 @@ export const ProtectedRoute = ({ children }) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center transition-colors">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin" />
-          <p className="text-slate-500 text-sm">Loading...</p>
+          <div className="w-10 h-10 border-4 border-amber-200 dark:border-lime-900 border-t-amber-500 dark:border-t-lime-400 rounded-full animate-spin" />
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Loading...</p>
         </div>
       </div>
     );
@@ -164,8 +164,8 @@ export const PublicRoute = ({ children }) => {
 
   if (isChecking) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin" />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center transition-colors">
+        <div className="w-8 h-8 border-4 border-amber-200 dark:border-lime-900 border-t-amber-500 dark:border-t-lime-400 rounded-full animate-spin" />
       </div>
     );
   }

@@ -52,22 +52,22 @@ async def process_resume_and_update_dashboard(user_id: str):
     """
     try:
         import asyncio
-        print(f"🔄 Starting resume processing for user: {user_id}")
+        print(f"[SYNC] Starting resume processing for user: {user_id}")
         
         # Process the pending resume task
         processed = await process_pending_tasks("ResumeIntelligenceAgent", limit=1)
-        print(f"✅ Processed {processed} resume tasks")
+        print(f"[OK] Processed {processed} resume tasks")
         
         if processed > 0:
             # Update dashboard state
             dashboard_service = get_dashboard_state_service()
             await dashboard_service.mark_resume_ready(user_id)
-            print(f"✅ Dashboard state updated: resume_ready=true for user {user_id}")
+            print(f"[OK] Dashboard state updated: resume_ready=true for user {user_id}")
         else:
-            print(f"⚠️ No resume tasks processed for user {user_id}")
+            print(f"[WARN] No resume tasks processed for user {user_id}")
             
     except Exception as e:
-        print(f"❌ Error processing resume: {str(e)}")
+        print(f"[ERR] Error processing resume: {str(e)}")
         import traceback
         traceback.print_exc()
 
@@ -138,7 +138,7 @@ async def upload_resume_file(
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="File is empty.")
         
-        print(f"📄 Processing resume upload: {filename} ({len(content)} bytes)")
+        print(f"[FILE] Processing resume upload: {filename} ({len(content)} bytes)")
         
         # Get document ingestion service
         ingestion_service = get_document_ingestion_service()
@@ -165,7 +165,7 @@ async def upload_resume_file(
                 detail=result.error or "We couldn't read your resume. Please upload a clearer file."
             )
         
-        print(f"✅ Text extracted: {result.word_count} words, confidence: {result.confidence}")
+        print(f"[OK] Text extracted: {result.word_count} words, confidence: {result.confidence}")
         
         # Store successful extraction
         doc_id = await _store_document_extraction(
@@ -245,7 +245,7 @@ async def upload_resume_file(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Upload failed: {str(e)}")
+        print(f"[ERR] Upload failed: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(
@@ -295,11 +295,11 @@ async def _store_document_extraction(
                 data = response.json()
                 return data[0]["id"] if data else None
             else:
-                print(f"⚠️ Failed to store document: {response.text}")
+                print(f"[WARN] Failed to store document: {response.text}")
                 return None
                 
     except Exception as e:
-        print(f"⚠️ Failed to store document: {str(e)}")
+        print(f"[WARN] Failed to store document: {str(e)}")
         return None
 
 

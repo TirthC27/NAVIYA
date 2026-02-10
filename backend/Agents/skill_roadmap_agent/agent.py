@@ -6,11 +6,22 @@ Generates visual skill-gap roadmaps with LLM analysis and YouTube tutorials.
 import json
 import re
 import asyncio
+import time
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import httpx
 
 from .config import AgentConfig
+
+try:
+    from app.observability.opik_client import (
+        init_opik, start_trace, end_trace,
+        create_span_async, log_metric, log_feedback,
+    )
+    from app.llm.opik_eval_prompt import inject_opik_eval, parse_opik_eval, log_opik_eval
+    OPIK_AVAILABLE = True
+except Exception:
+    OPIK_AVAILABLE = False
 
 
 class SkillRoadmapAgent:
@@ -116,7 +127,7 @@ CRITICAL:
 - ALWAYS include a "step" number for every node (0 for goal, 1+ for skills in learning order)
 - LINK DIRECTION RULE: In each link, "source" MUST have a LOWER step number than "target"
   Example: Python (step 1) → Django (step 4) means { "source": "skill_python", "target": "skill_django" }
-  WRONG: { "source": "skill_django", "target": "skill_python" } ❌ (higher step pointing to lower step)
+  WRONG: { "source": "skill_django", "target": "skill_python" } [ERR] (higher step pointing to lower step)
   RIGHT: { "source": "skill_python", "target": "skill_django" } ✓ (lower step pointing to higher step)
 - For "missing" skills, include a "search_query" field with a good YouTube search query for learning that skill
 - Make search_query specific and educational, e.g. "React hooks tutorial for beginners 2024"
@@ -223,7 +234,12 @@ Experience: {exp_text}
 Analyze the gap between the user's current skills and what's needed for "{career_goal}".
 Generate the skill roadmap graph as specified."""
         
-        llm_response = await call_gemini(prompt, self.ROADMAP_SYSTEM_PROMPT)
+        augmented_sys = inject_opik_eval(self.ROADMAP_SYSTEM_PROMPT, agent_type="Roadmap") if OPIK_AVAILABLE else self.ROADMAP_SYSTEM_PROMPT
+        llm_response = await call_gemini(prompt, augmented_sys)
+        if OPIK_AVAILABLE:
+            eval_result = parse_opik_eval(llm_response)
+            llm_response = eval_result["content"]
+            self._last_opik_eval = eval_result.get("evaluation", {})
         roadmap_data = self._parse_llm_json(llm_response)
         
         if not roadmap_data or "nodes" not in roadmap_data:
@@ -339,11 +355,33 @@ Generate the skill roadmap graph as specified."""
             "current_skills_count": int
         }
         """
+        trace_id = None
+        t0 = time.time()
+        if OPIK_AVAILABLE:
+            try:
+                trace_id = start_trace(
+                    "SkillRoadmap_GenerateRoadmap",
+                    input={"user_id": user_id, "career_goal": career_goal, "language": preferred_language},
+                    metadata={"agent": "skill_roadmap", "operation": "generate_roadmap"},
+                )
+            except Exception:
+                trace_id = None
+
         if not career_goal or len(career_goal.strip()) < 3:
+            if OPIK_AVAILABLE and trace_id:
+                try:
+                    end_trace(trace_id, output={"error": "invalid_career_goal"}, status="error")
+                except Exception:
+                    pass
             return {"success": False, "error": "Please enter a valid career goal"}
         
         # 1. Fetch current skills
         current_skills, user_experience = await self.fetch_user_skills(user_id)
+        if OPIK_AVAILABLE and trace_id:
+            try:
+                await create_span_async(trace_id, "FetchUserSkills", input={"user_id": user_id}, output={"skills_count": len(current_skills), "experience_count": len(user_experience)})
+            except Exception:
+                pass
         
         # 2. Call LLM for analysis
         try:
@@ -353,8 +391,21 @@ Generate the skill roadmap graph as specified."""
                 user_experience,
                 preferred_language
             )
+            if OPIK_AVAILABLE and trace_id:
+                try:
+                    nodes = roadmap_data.get("nodes", [])
+                    links = roadmap_data.get("links", [])
+                    missing = sum(1 for n in nodes if n.get("status") == "missing")
+                    await create_span_async(trace_id, "LLM_SkillGapAnalysis", input={"career_goal": career_goal, "skills_count": len(current_skills)}, output={"nodes": len(nodes), "links": len(links), "missing_skills": missing})
+                except Exception:
+                    pass
         except Exception as e:
             print(f"[SkillRoadmapAgent] LLM error: {e}")
+            if OPIK_AVAILABLE and trace_id:
+                try:
+                    end_trace(trace_id, output={"error": str(e)}, status="error")
+                except Exception:
+                    pass
             return {"success": False, "error": f"AI analysis failed: {str(e)}"}
         
         # 3. Save to database
@@ -364,9 +415,14 @@ Generate the skill roadmap graph as specified."""
             roadmap_data,
             preferred_language
         )
+        if OPIK_AVAILABLE and trace_id:
+            try:
+                await create_span_async(trace_id, "SaveToDatabase", input={"user_id": user_id}, output={"roadmap_id": roadmap_id, "saved": roadmap_id is not None})
+            except Exception:
+                pass
         
-        # 4. Return result
-        return {
+        # 4. Finalize trace and return result
+        result = {
             "success": True,
             "roadmap": roadmap_data,
             "roadmap_id": roadmap_id,
@@ -374,6 +430,26 @@ Generate the skill roadmap graph as specified."""
             "career_goal": career_goal,
             "saved": roadmap_id is not None
         }
+
+        # Add OPIK self-evaluation if available
+        if OPIK_AVAILABLE and hasattr(self, '_last_opik_eval') and self._last_opik_eval:
+            result["opik_eval"] = self._last_opik_eval
+            self._last_opik_eval = None
+
+        if OPIK_AVAILABLE and trace_id:
+            try:
+                duration_ms = (time.time() - t0) * 1000
+                nodes = roadmap_data.get("nodes", [])
+                missing = sum(1 for n in nodes if n.get("status") == "missing")
+                log_metric(trace_id, "total_skills", float(len(nodes)))
+                log_metric(trace_id, "missing_skills", float(missing))
+                log_metric(trace_id, "generation_time_ms", duration_ms)
+                log_feedback(trace_id, "roadmap_quality", 1.0, f"Generated {len(nodes)} nodes for {career_goal}", "system")
+                end_trace(trace_id, output={"nodes": len(nodes), "missing": missing, "saved": roadmap_id is not None}, status="success")
+            except Exception:
+                pass
+
+        return result
     
     async def get_roadmap_history(self, user_id: str, limit: int = 20) -> List[Dict]:
         """

@@ -20,6 +20,9 @@ from app.agents.skill_evaluation_agent import (
     SkillEvaluationAgentWorker,
     AssessmentInput
 )
+from app.observability.opik_client import (
+    start_trace, end_trace, log_metric, log_feedback
+)
 
 
 router = APIRouter(prefix="/assessments", tags=["skill-assessments"])
@@ -177,6 +180,13 @@ async def generate_assessment(request: GenerateAssessmentRequest):
         
         assessment = result.get("assessment", {})
         
+        log_metric(trace_id, "total_questions", float(assessment.get("total_questions", 0)))
+        end_trace(
+            trace_id,
+            output={"questions": assessment.get("total_questions", 0), "difficulty": assessment.get("difficulty")},
+            status="success"
+        )
+
         return AssessmentResponse(
             success=True,
             assessment_id=task_id,
@@ -188,8 +198,12 @@ async def generate_assessment(request: GenerateAssessmentRequest):
         )
         
     except HTTPException:
+        if 'trace_id' in locals():
+            end_trace(trace_id, output={"error": "HTTP error"}, status="error")
         raise
     except Exception as e:
+        if 'trace_id' in locals():
+            end_trace(trace_id, output={"error": str(e)}, status="error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -204,6 +218,13 @@ async def submit_assessment(request: SubmitResponsesRequest):
         Evaluation results with proficiency level and recommendations
     """
     try:
+        # Start Opik trace
+        trace_id = start_trace(
+            "SkillAssessment_Evaluate",
+            metadata={"user_id": request.user_id, "domain": request.domain, "skill": request.skill_or_subject, "response_count": len(request.responses)},
+            tags=["skill-assessment", "evaluate", request.domain]
+        )
+
         # Create worker instance
         worker = SkillEvaluationAgentWorker()
         
@@ -235,6 +256,7 @@ async def submit_assessment(request: SubmitResponsesRequest):
         })
         
         if not result.get("success"):
+            end_trace(trace_id, output={"error": result.get("error")}, status="error")
             raise HTTPException(
                 status_code=400,
                 detail=result.get("error", "Failed to evaluate assessment")
@@ -242,6 +264,15 @@ async def submit_assessment(request: SubmitResponsesRequest):
         
         evaluation = result.get("evaluation", {})
         
+        score = evaluation.get("raw_score", 0)
+        log_metric(trace_id, "raw_score", float(score) if score else 0)
+        log_feedback(trace_id, "skill_proficiency", min(10, float(score) / 10) if score else 0, reason=evaluation.get("proficiency_level", "unknown"), evaluator="auto")
+        end_trace(
+            trace_id,
+            output={"score": score, "proficiency": evaluation.get("proficiency_level"), "weak_areas": evaluation.get("weak_areas", [])},
+            status="success"
+        )
+
         return EvaluationResponse(
             success=True,
             assessment_id=evaluation.get("assessment_id"),
@@ -255,8 +286,12 @@ async def submit_assessment(request: SubmitResponsesRequest):
         )
         
     except HTTPException:
+        if 'trace_id' in locals():
+            end_trace(trace_id, output={"error": "HTTP error"}, status="error")
         raise
     except Exception as e:
+        if 'trace_id' in locals():
+            end_trace(trace_id, output={"error": str(e)}, status="error")
         raise HTTPException(status_code=500, detail=str(e))
 
 

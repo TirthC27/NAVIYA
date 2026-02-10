@@ -29,6 +29,10 @@ from enum import Enum
 from app.config import settings
 from app.agents.worker_base import AgentWorker, TaskResult
 from app.agents.llm import call_gemini
+from app.observability.opik_client import (
+    start_trace, end_trace, create_span_async, log_metric, log_feedback
+)
+from app.llm.opik_eval_prompt import inject_opik_eval, parse_opik_eval, log_opik_eval
 
 
 # ============================================
@@ -220,7 +224,17 @@ class MentorAgentWorker(AgentWorker):
         Returns:
             TaskResult with message output
         """
+        import time as _time
+        _start = _time.time()
         start_time = datetime.now()
+        
+        user_id = task_payload.get("user_id", "unknown")
+        task_type = task_payload.get("task_type", "unknown")
+        trace_id = start_trace(
+            "MentorAgent",
+            metadata={"user_id": user_id, "task_type": task_type},
+            tags=["mentor", task_type]
+        )
         
         try:
             # Parse and validate payload
@@ -269,20 +283,22 @@ class MentorAgentWorker(AgentWorker):
             domain_support = task_payload.get("domain_support_status", "supported")
             
             # Route to appropriate handler
-            if task_type == "welcome_guidance":
-                message = await self._handle_welcome_guidance(user_context, domain)
-            elif task_type == "limited_domain_notice":
-                message = await self._handle_limited_domain_notice(user_context, domain)
-            elif task_type == "system_progress_update":
-                completed_task = task_payload.get("completed_task", "")
-                message = await self._handle_progress_update(user_context, completed_task)
-            else:
-                # Should not reach here due to earlier validation
-                return TaskResult(
-                    success=False,
-                    error=f"Unhandled task_type: {task_type}",
-                    summary="Task type not implemented"
-                )
+            async with create_span_async(trace_id, f"Handle_{task_type}", span_type="llm", input_data={"domain": domain, "task_type": task_type}) as span:
+                if task_type == "welcome_guidance":
+                    message = await self._handle_welcome_guidance(user_context, domain)
+                elif task_type == "limited_domain_notice":
+                    message = await self._handle_limited_domain_notice(user_context, domain)
+                elif task_type == "system_progress_update":
+                    completed_task = task_payload.get("completed_task", "")
+                    message = await self._handle_progress_update(user_context, completed_task)
+                else:
+                    end_trace(trace_id, output={"error": f"Unhandled: {task_type}"}, status="error")
+                    return TaskResult(
+                        success=False,
+                        error=f"Unhandled task_type: {task_type}",
+                        summary="Task type not implemented"
+                    )
+                span.set_output({"message_type": message.message_type.value, "title": message.title})
             
             # Save message to database
             saved = await self._save_message(user_id, task_id, message)
@@ -296,6 +312,10 @@ class MentorAgentWorker(AgentWorker):
             
             # Calculate execution time
             execution_time = int((datetime.now() - start_time).total_seconds() * 1000)
+            
+            log_metric(trace_id, "execution_time_ms", float(execution_time))
+            log_feedback(trace_id, "mentor_message_quality", 8.0, f"Generated {message.message_type.value}", "system")
+            end_trace(trace_id, output={"message_type": message.message_type.value, "title": message.title}, status="success")
             
             return TaskResult(
                 success=True,
@@ -311,6 +331,7 @@ class MentorAgentWorker(AgentWorker):
             )
             
         except Exception as e:
+            end_trace(trace_id, output={"error": str(e)}, status="error")
             return TaskResult(
                 success=False,
                 error=str(e),
@@ -357,10 +378,10 @@ class MentorAgentWorker(AgentWorker):
         response = await self.client.post(url, headers=get_headers(), json=payload)
         
         if response.status_code in [200, 201]:
-            print(f"✅ Saved mentor message: {message.title}")
+            print(f"[OK] Saved mentor message: {message.title}")
             return True
         
-        print(f"❌ Failed to save mentor message: {response.text}")
+        print(f"[ERR] Failed to save mentor message: {response.text}")
         return False
     
     # ============================================
@@ -394,8 +415,11 @@ Remember:
 - List upcoming steps: resume upload, roadmap, skill evaluation"""
 
         try:
-            # Call LLM
-            response = await call_gemini(prompt, WELCOME_GUIDANCE_SYSTEM_PROMPT)
+            # Call LLM with OPIK evaluation
+            augmented_prompt = inject_opik_eval(WELCOME_GUIDANCE_SYSTEM_PROMPT, agent_type="Mentor")
+            response = await call_gemini(prompt, augmented_prompt)
+            eval_result = parse_opik_eval(response)
+            response = eval_result["content"]
             
             # Parse JSON response
             parsed = self._parse_llm_response(response)
@@ -410,7 +434,7 @@ Remember:
                 )
             )
         except Exception as e:
-            print(f"⚠️ LLM call failed, using fallback: {e}")
+            print(f"[WARN] LLM call failed, using fallback: {e}")
             return MentorMessage(
                 message_type=MessageType.WELCOME,
                 title="Welcome to NAVIYA",
@@ -443,7 +467,10 @@ Remember:
 - Invite them to explore general features"""
 
         try:
-            response = await call_gemini(prompt, LIMITED_DOMAIN_SYSTEM_PROMPT)
+            augmented_prompt = inject_opik_eval(LIMITED_DOMAIN_SYSTEM_PROMPT, agent_type="Mentor")
+            response = await call_gemini(prompt, augmented_prompt)
+            eval_result = parse_opik_eval(response)
+            response = eval_result["content"]
             parsed = self._parse_llm_response(response)
             
             return MentorMessage(
@@ -456,7 +483,7 @@ Remember:
                 )
             )
         except Exception as e:
-            print(f"⚠️ LLM call failed, using fallback: {e}")
+            print(f"[WARN] LLM call failed, using fallback: {e}")
             return MentorMessage(
                 message_type=MessageType.NOTICE,
                 title="Coming Soon to Your Field",
@@ -514,7 +541,10 @@ Completed Task: {completed_task}
 
 The message should inform the user that this step is complete."""
 
-            response = await call_gemini(prompt, PROGRESS_UPDATE_SYSTEM_PROMPT)
+            augmented_prompt = inject_opik_eval(PROGRESS_UPDATE_SYSTEM_PROMPT, agent_type="Mentor")
+            response = await call_gemini(prompt, augmented_prompt)
+            eval_result = parse_opik_eval(response)
+            response = eval_result["content"]
             parsed = self._parse_llm_response(response)
             
             return MentorMessage(

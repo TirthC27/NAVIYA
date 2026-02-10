@@ -1,5 +1,5 @@
 """
-LearnTube AI - Observability Module
+Naviya AI - Observability Module
 OPIK integration for tracing, metrics, and evaluation
 """
 

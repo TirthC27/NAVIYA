@@ -43,7 +43,7 @@ Should see:
 1. **Start Backend**:
    ```bash
    cd backend
-   .\start_server.bat
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
 2. **Start Frontend**:

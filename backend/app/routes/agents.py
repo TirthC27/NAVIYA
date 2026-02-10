@@ -343,7 +343,7 @@ async def get_user_activity(user_id: str, limit: int = 50):
             return {"activity": [], "count": 0}
             
     except Exception as e:
-        print(f"⚠️ Activity log query failed: {str(e)}")
+        print(f"[WARN] Activity log query failed: {str(e)}")
         return {"activity": [], "count": 0}
 
 
@@ -373,7 +373,7 @@ async def get_agent_activity(agent_name: str, limit: int = 50):
             return {"activity": [], "count": 0}
             
     except Exception as e:
-        print(f"⚠️ Activity log query failed: {str(e)}")
+        print(f"[WARN] Activity log query failed: {str(e)}")
         return {"activity": [], "count": 0}
 
 
@@ -396,5 +396,5 @@ async def get_activity_stats():
             return {"performance": []}
             
     except Exception as e:
-        print(f"⚠️ Stats query failed: {str(e)}")
+        print(f"[WARN] Stats query failed: {str(e)}")
         return {"performance": []}

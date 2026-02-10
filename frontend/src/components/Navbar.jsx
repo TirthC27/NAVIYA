@@ -39,7 +39,7 @@ export default function Navbar() {
     <nav style={styles.nav}>
       <div style={styles.logo} onClick={() => navigate('/')}>
         <div style={styles.logoIcon}>🎓</div>
-        <span style={styles.logoText}>LearnTube AI</span>
+        <span style={styles.logoText}>Naviya AI</span>
       </div>
     </nav>
   );

@@ -351,7 +351,7 @@ def test_integration_instructions():
     print("""
     Manual Integration Test Steps:
     
-    1. Ensure backend is running: start_server.bat
+    1. Ensure backend is running: uvicorn app.main:app --host 0.0.0.0 --port 8000
     2. Create/use a test user
     3. Complete onboarding via UI
     4. Check Supabase for tasks

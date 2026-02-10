@@ -55,10 +55,10 @@ class AgentRegistry:
             agent: AgentWorker instance to register
         """
         if agent.agent_name in self._agents:
-            print(f"⚠️ Warning: Overwriting existing agent: {agent.agent_name}")
+            print(f"[WARN] Warning: Overwriting existing agent: {agent.agent_name}")
         
         self._agents[agent.agent_name] = agent
-        print(f"📝 Registered agent: {agent.agent_name} ({len(agent.supported_task_types)} task types)")
+        print(f"[REG] Registered agent: {agent.agent_name} ({len(agent.supported_task_types)} task types)")
     
     def unregister(self, agent_name: str) -> bool:
         """

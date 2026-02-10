@@ -23,7 +23,7 @@ try:
     LANGCHAIN_AVAILABLE = True
 except ImportError:
     LANGCHAIN_AVAILABLE = False
-    print("⚠️ Install: pip install langchain langchain-community pypdf unstructured")
+    print("[WARN] Install: pip install langchain langchain-community pypdf unstructured")
 
 
 class DocumentRAG:
@@ -63,14 +63,14 @@ class DocumentRAG:
         Supports: PDF, TXT, MD, CSV
         """
         if not LANGCHAIN_AVAILABLE:
-            print("❌ LangChain not installed. Cannot load documents.")
+            print("[ERR] LangChain not installed. Cannot load documents.")
             return []
         
         documents = []
         directory_path = Path(directory)
         
         if not directory_path.exists():
-            print(f"❌ Directory not found: {directory}")
+            print(f"[ERR] Directory not found: {directory}")
             return []
         
         # Load PDFs
@@ -82,9 +82,9 @@ class DocumentRAG:
                     doc.metadata["source_type"] = "pdf"
                     doc.metadata["filename"] = pdf_file.name
                 documents.extend(docs)
-                print(f"✅ Loaded PDF: {pdf_file.name}")
+                print(f"[OK] Loaded PDF: {pdf_file.name}")
             except Exception as e:
-                print(f"❌ Error loading {pdf_file.name}: {e}")
+                print(f"[ERR] Error loading {pdf_file.name}: {e}")
         
         # Load Text files
         for txt_file in directory_path.glob("**/*.txt"):
@@ -95,9 +95,9 @@ class DocumentRAG:
                     doc.metadata["source_type"] = "text"
                     doc.metadata["filename"] = txt_file.name
                 documents.extend(docs)
-                print(f"✅ Loaded TXT: {txt_file.name}")
+                print(f"[OK] Loaded TXT: {txt_file.name}")
             except Exception as e:
-                print(f"❌ Error loading {txt_file.name}: {e}")
+                print(f"[ERR] Error loading {txt_file.name}: {e}")
         
         # Load Markdown files
         for md_file in directory_path.glob("**/*.md"):
@@ -108,9 +108,9 @@ class DocumentRAG:
                     doc.metadata["source_type"] = "markdown"
                     doc.metadata["filename"] = md_file.name
                 documents.extend(docs)
-                print(f"✅ Loaded MD: {md_file.name}")
+                print(f"[OK] Loaded MD: {md_file.name}")
             except Exception as e:
-                print(f"❌ Error loading {md_file.name}: {e}")
+                print(f"[ERR] Error loading {md_file.name}: {e}")
         
         # Load CSV files
         for csv_file in directory_path.glob("**/*.csv"):
@@ -121,9 +121,9 @@ class DocumentRAG:
                     doc.metadata["source_type"] = "csv"
                     doc.metadata["filename"] = csv_file.name
                 documents.extend(docs)
-                print(f"✅ Loaded CSV: {csv_file.name}")
+                print(f"[OK] Loaded CSV: {csv_file.name}")
             except Exception as e:
-                print(f"❌ Error loading {csv_file.name}: {e}")
+                print(f"[ERR] Error loading {csv_file.name}: {e}")
         
         return documents
     
@@ -132,7 +132,7 @@ class DocumentRAG:
         Split documents into chunks and add to vector database
         """
         if not documents:
-            print("⚠️ No documents to index")
+            print("[WARN] No documents to index")
             return 0
         
         # Split documents into chunks
@@ -150,7 +150,7 @@ class DocumentRAG:
             ids=ids
         )
         
-        print(f"✅ Indexed {len(chunks)} chunks from {len(documents)} documents")
+        print(f"[OK] Indexed {len(chunks)} chunks from {len(documents)} documents")
         return len(chunks)
     
     def search_knowledge(self, query: str, n_results: int = 5) -> List[Dict]:
@@ -184,15 +184,15 @@ class DocumentRAG:
         """
         Load and index all documents from the base directory
         """
-        print(f"📚 Loading documents from: {base_directory}")
+        print(f"[DOCS] Loading documents from: {base_directory}")
         documents = self.load_documents_from_directory(base_directory)
         
         if documents:
             chunk_count = self.index_documents(documents)
-            print(f"✅ Successfully indexed {chunk_count} chunks")
+            print(f"[OK] Successfully indexed {chunk_count} chunks")
             return chunk_count
         else:
-            print("⚠️ No documents found to index")
+            print("[WARN] No documents found to index")
             return 0
 
 
@@ -211,7 +211,7 @@ def get_document_rag() -> DocumentRAG:
 if __name__ == "__main__":
     import sys
     
-    print("🚀 LearnTube AI - Document Indexer")
+    print("[START] Naviya AI - Document Indexer")
     print("=" * 50)
     
     # Initialize RAG
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     
     if chunk_count > 0:
         # Test search
-        print("\n🔍 Testing search...")
+        print("\n[SEARCH] Testing search...")
         test_query = "machine learning tutorial"
         results = rag.search_knowledge(test_query, n_results=3)
         
@@ -237,4 +237,4 @@ if __name__ == "__main__":
             print(f"   Score: {result['similarity_score']:.3f}")
             print(f"   Content: {result['content'][:200]}...")
     
-    print("\n✅ Indexing complete!")
+    print("\n[OK] Indexing complete!")

@@ -51,7 +51,7 @@ class AgentWorkerLoop:
         Start the worker loop.
         Runs continuously until stopped.
         """
-        print(f"\n🚀 Starting worker loop for: {self.agent_name}")
+        print(f"\n[START] Starting worker loop for: {self.agent_name}")
         print(f"   Poll interval: {self.poll_interval}s")
         print(f"   Max tasks/cycle: {self.max_tasks_per_cycle}")
         
@@ -67,7 +67,7 @@ class AgentWorkerLoop:
                     )
                     
                     if tasks:
-                        print(f"\n📋 {self.agent_name}: Found {len(tasks)} pending task(s)")
+                        print(f"\n[LIST] {self.agent_name}: Found {len(tasks)} pending task(s)")
                         
                         for task in tasks:
                             if not self._running:
@@ -88,15 +88,15 @@ class AgentWorkerLoop:
                         pass
                         
                 except Exception as e:
-                    print(f"❌ {self.agent_name} worker error: {str(e)}")
+                    print(f"[ERR] {self.agent_name} worker error: {str(e)}")
                     # Don't crash - wait and retry
                     await asyncio.sleep(self.poll_interval)
         
-        print(f"⏹️ Worker loop stopped: {self.agent_name}")
+        print(f"[STOP] Worker loop stopped: {self.agent_name}")
     
     def stop(self):
         """Signal the worker to stop after current task"""
-        print(f"🛑 Stopping worker: {self.agent_name}")
+        print(f"[STOP] Stopping worker: {self.agent_name}")
         self._running = False
         self._shutdown_event.set()
 
@@ -140,7 +140,7 @@ class WorkerManager:
             agent_names = registry.list_agents()
         
         print(f"\n{'='*50}")
-        print("🏭 AGENT WORKER MANAGER")
+        print("AGENT WORKER MANAGER")
         print(f"{'='*50}")
         print(f"Starting workers for: {agent_names}")
         
@@ -149,7 +149,7 @@ class WorkerManager:
         # Create worker loops
         for agent_name in agent_names:
             if not registry.is_registered(agent_name):
-                print(f"⚠️ Skipping unregistered agent: {agent_name}")
+                print(f"[WARN] Skipping unregistered agent: {agent_name}")
                 continue
             
             worker = AgentWorkerLoop(
@@ -168,7 +168,7 @@ class WorkerManager:
         self._tasks.add(cleanup_task)
         cleanup_task.add_done_callback(self._tasks.discard)
         
-        print(f"\n✅ Started {len(self._workers)} worker(s)")
+        print(f"\n[OK] Started {len(self._workers)} worker(s)")
         print(f"{'='*50}\n")
     
     async def _timeout_cleanup_loop(self):
@@ -183,14 +183,14 @@ class WorkerManager:
                 async with TaskExecutor() as executor:
                     timed_out = await executor.timeout_stale_tasks(TASK_TIMEOUT_MINUTES)
                     if timed_out > 0:
-                        print(f"⏰ Cleaned up {timed_out} timed-out task(s)")
+                        print(f"[TIMEOUT] Cleaned up {timed_out} timed-out task(s)")
                         
             except Exception as e:
-                print(f"❌ Timeout cleanup error: {str(e)}")
+                print(f"[ERR] Timeout cleanup error: {str(e)}")
     
     async def stop_all(self):
         """Stop all worker loops gracefully"""
-        print(f"\n🛑 Stopping all workers...")
+        print(f"\n[STOP] Stopping all workers...")
         self._running = False
         
         # Signal all workers to stop
@@ -204,7 +204,7 @@ class WorkerManager:
         self._workers.clear()
         self._tasks.clear()
         
-        print("✅ All workers stopped")
+        print("[OK] All workers stopped")
     
     async def run_forever(self, agent_names: Optional[list[str]] = None):
         """
@@ -303,7 +303,7 @@ def main():
     args = parser.parse_args()
     
     print(f"\n{'='*50}")
-    print("🤖 NAVIYA Agent Worker System")
+    print("NAVIYA Agent Worker System")
     print(f"{'='*50}\n")
     
     if args.agent:
