@@ -111,7 +111,7 @@ python -m uvicorn app.main:app --reload
 ```
 
 ### 4. View Dashboard
-Open: http://localhost:8000/docs
+Open: https://naviya-backend.onrender.com/docs
 
 ## 📊 OPIK Dashboard
 

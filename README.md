@@ -923,14 +923,14 @@ npm run dev
 #### **4. Access Application**
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:8000`
-- API Docs: `http://localhost:8000/docs`
+- API Docs: `https://naviya-backend.onrender.com/docs`
 - Opik Dashboard: `https://www.comet.com/opik/projects/naviya`
 
 ### **🧪 Test the System**
 
 ```bash
 # Backend: Test roadmap API
-curl -X POST http://localhost:8000/api/roadmap \
+curl -X POST https://naviya-backend.onrender.com/api/roadmap \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "test-user",
@@ -948,7 +948,7 @@ curl -X POST http://localhost:8000/api/roadmap \
 ### **📚 Documentation**
 
 - **Architecture Deep-Dive**: [`backend/OPIK_INTEGRATION.md`](backend/OPIK_INTEGRATION.md)
-- **API Reference**: `http://localhost:8000/docs` (Swagger UI)
+- **API Reference**: `https://naviya-backend.onrender.com/docs` (Swagger UI)
 - **Agent Development Guide**: [`backend/app/agents/README.md`](backend/app/agents/README.md)
 - **Database Schema**: [`backend/data/README_AUTH.md`](backend/data/README_AUTH.md)
 

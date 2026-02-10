@@ -201,7 +201,7 @@ python -m app.rag.document_loader
 ### **Step 3: Test**
 ```bash
 # Make API request
-curl -X POST http://localhost:8000/generate-learning-plan \
+curl -X POST https://naviya-backend.onrender.com/generate-learning-plan \
   -H "Content-Type: application/json" \
   -d '{"user_topic": "blockchain development"}'
 ```

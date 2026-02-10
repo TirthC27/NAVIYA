@@ -72,7 +72,7 @@ async def test_onboarding_save():
         async with httpx.AsyncClient() as client:
             # Register user
             reg_response = await client.post(
-                "http://localhost:8000/api/auth/register",
+                "https://naviya-backend.onrender.com/api/auth/register",
                 json={
                     "name": "Onboarding Test User",
                     "email": test_email,
@@ -90,7 +90,7 @@ async def test_onboarding_save():
             
             # Save onboarding data (Step 1)
             save_response = await client.post(
-                "http://localhost:8000/api/onboarding/save",
+                "https://naviya-backend.onrender.com/api/onboarding/save",
                 json={
                     "user_id": user_id,
                     "selected_domain": "Technology / Engineering",
@@ -121,7 +121,7 @@ async def test_onboarding_complete(user_id):
     try:
         async with httpx.AsyncClient() as client:
             complete_response = await client.post(
-                "http://localhost:8000/api/onboarding/complete",
+                "https://naviya-backend.onrender.com/api/onboarding/complete",
                 json={
                     "user_id": user_id,
                     "selected_domain": "Technology / Engineering",
@@ -202,7 +202,7 @@ async def test_status_endpoint(user_id):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"http://localhost:8000/api/onboarding/status?user_id={user_id}"
+                f"https://naviya-backend.onrender.com/api/onboarding/status?user_id={user_id}"
             )
             
             if response.status_code == 200:

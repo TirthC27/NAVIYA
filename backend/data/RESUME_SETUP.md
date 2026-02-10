@@ -108,7 +108,7 @@ const formData = new FormData();
 formData.append('file', resumeFile);
 
 const response = await fetch(
-  `http://localhost:8000/api/resume-simple/upload?user_id=${userId}`,
+  `https://naviya-backend.onrender.com/api/resume-simple/upload?user_id=${userId}`,
   {
     method: 'POST',
     body: formData

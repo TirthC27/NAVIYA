@@ -54,7 +54,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 **Test with Postman/Thunder Client:**
 ```
-POST http://localhost:8000/api/resume-simple/upload
+POST https://naviya-backend.onrender.com/api/resume-simple/upload
 Content-Type: multipart/form-data
 
 Fields:
@@ -76,7 +76,7 @@ Fields:
 
 **Test Get Resume Data:**
 ```
-GET http://localhost:8000/api/resume-simple/data/{user_id}
+GET https://naviya-backend.onrender.com/api/resume-simple/data/{user_id}
 ```
 
 ### 5. Create Frontend Profile Sidebar Component
@@ -94,7 +94,7 @@ GET http://localhost:8000/api/resume-simple/data/{user_id}
 **API Integration:**
 ```javascript
 // Fetch resume data
-const response = await fetch(`http://localhost:8000/api/resume-simple/data/${userId}`);
+const response = await fetch(`https://naviya-backend.onrender.com/api/resume-simple/data/${userId}`);
 const data = await response.json();
 
 // data.skills = ["Python", "React", "Docker", ...]

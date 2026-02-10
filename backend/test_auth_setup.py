@@ -62,7 +62,7 @@ async def test_registration():
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                "http://localhost:8000/api/auth/register",
+                "https://naviya-backend.onrender.com/api/auth/register",
                 json={
                     "name": "Test User",
                     "email": test_email,
@@ -100,7 +100,7 @@ async def test_login(email, password):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                "http://localhost:8000/api/auth/login",
+                "https://naviya-backend.onrender.com/api/auth/login",
                 json={
                     "email": email,
                     "password": password

@@ -234,7 +234,7 @@ asyncio.run(test())
 
 Or use the API:
 ```bash
-curl -X POST http://localhost:8000/generate-learning-plan \
+curl -X POST https://naviya-backend.onrender.com/generate-learning-plan \
   -H "Content-Type: application/json" \
   -d '{"user_topic": "your topic"}'
 ```
