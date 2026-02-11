@@ -81,8 +81,8 @@ const ProfileSidebar = ({ userId }) => {
 
   if (loading) {
     return (
-      <div className="w-80 bg-white border-r border-gray-200 p-6">
-        <div className="animate-pulse">Loading profile...</div>
+      <div className="w-80 bg-white dark:bg-[#0d1220] border-r border-gray-200 dark:border-slate-800/60 p-6 transition-colors">
+        <div className="animate-pulse text-slate-500">Loading profile...</div>
       </div>
     );
   }
@@ -91,11 +91,11 @@ const ProfileSidebar = ({ userId }) => {
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="w-80 bg-white border-r border-gray-200 p-6 overflow-y-auto"
+      className="w-80 bg-white dark:bg-[#0d1220] border-r border-gray-200 dark:border-slate-800/60 p-6 overflow-y-auto transition-colors"
     >
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Profile</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Profile</h2>
       </div>
 
       {/* Upload Resume Button */}

@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../../api/config';
 import {
@@ -19,10 +19,17 @@ import {
   CheckCircle,
   Sun,
   Moon,
-  Presentation
+  Presentation,
+  PanelLeftClose,
+  PanelLeft,
+  ChevronLeft,
+  ChevronRight,
+  Menu
 } from 'lucide-react';
 import { useDashboardState } from '../../context/DashboardStateContext';
 import { useTheme } from '../../context/ThemeContext';
+import { WelcomeCard, OnboardingGuidePanel } from '../onboarding';
+import { useOnboarding } from '../../context/OnboardingContext';
 
 const careerNavItems = [
   { 
@@ -82,6 +89,7 @@ const CareerLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { dark, toggle: toggleTheme } = useTheme();
   
   // Get dashboard state for feature gating
@@ -125,7 +133,7 @@ const CareerLayout = () => {
     }
   };
 
-  const renderNavItem = (item) => {
+  const renderNavItem = (item, collapsed = false) => {
     // Check if feature is unlocked
     const hasResume = dashboardState?.resume_ready === true;
     const isUnlocked = item.alwaysUnlocked || (item.requiresResume ? hasResume : true);
@@ -138,21 +146,23 @@ const CareerLayout = () => {
       return (
         <div
           key={item.path}
-          className="relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60 group"
+          className={`relative flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-xl text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60 group`}
           title={unlockMsg}
         >
           <Lock className="w-5 h-5 flex-shrink-0" />
           
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium">{item.label}</div>
-            <div className="text-xs text-slate-300 dark:text-slate-600 truncate">
-              {unlockMsg}
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium">{item.label}</div>
+              <div className="text-xs text-slate-300 dark:text-slate-600 truncate">
+                {unlockMsg}
+              </div>
             </div>
-          </div>
+          )}
           
           {/* Hover tooltip */}
-          <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-            🔒 {unlockMsg}
+          <div className={`absolute ${collapsed ? 'left-full ml-2' : 'left-full ml-2'} px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50`}>
+            {collapsed ? item.label + ' — ' : ''}🔒 {unlockMsg}
           </div>
         </div>
       );
@@ -163,10 +173,10 @@ const CareerLayout = () => {
         key={item.path}
         to={item.path}
         className={({ isActive }) => `
-          relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200
+          relative flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-xl transition-all duration-200 group
           ${isActive 
-            ? 'bg-amber-50 dark:bg-lime-500/10 text-amber-800 dark:text-lime-400' 
-            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}
+            ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-800 dark:text-blue-400' 
+            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'}
         `}
       >
         {({ isActive }) => (
@@ -174,27 +184,36 @@ const CareerLayout = () => {
             {isActive && (
               <motion.div
                 layoutId="careerActiveIndicator"
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-amber-400 rounded-r-full"
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-500 rounded-r-full"
                 transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
               />
             )}
             
-            <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-amber-500 dark:text-lime-400' : ''}`} />
+            <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-500 dark:text-blue-400' : ''}`} />
             
-            <div className="flex-1 min-w-0">
-              <div className={`text-sm font-medium ${isActive ? 'text-amber-800 dark:text-lime-400' : ''}`}>
-                {item.label}
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <div className={`text-sm font-medium ${isActive ? 'text-blue-800 dark:text-blue-400' : ''}`}>
+                  {item.label}
+                </div>
+                <div className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                  {item.description}
+                </div>
               </div>
-              <div className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                {item.description}
-              </div>
-            </div>
+            )}
             
-            {isComplete && !isActive && (
+            {!collapsed && isComplete && !isActive && (
               <CheckCircle className="w-4 h-4 text-emerald-500" />
             )}
-            {isActive && (
-              <div className="w-2 h-2 rounded-full bg-amber-400" />
+            {!collapsed && isActive && (
+              <div className="w-2 h-2 rounded-full bg-blue-400" />
+            )}
+
+            {/* Collapsed tooltip */}
+            {collapsed && (
+              <div className="absolute left-full ml-2 px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                {item.label}
+              </div>
             )}
           </>
         )}
@@ -203,115 +222,159 @@ const CareerLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F1A] transition-colors duration-300">
+      {/* Phase 1 — Welcome Card */}
+      <WelcomeCard />
+
+      {/* Phase 2 — Guided onboarding panel */}
+      <OnboardingGuidePanel />
+
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-sm z-40 transition-colors duration-300">
+      <motion.aside
+        className="fixed left-0 top-0 h-full bg-white dark:bg-[#0d1220] border-r border-slate-200 dark:border-slate-800/60 shadow-sm z-40 transition-colors duration-300 flex flex-col"
+        animate={{ width: sidebarCollapsed ? 72 : 256 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      >
         {/* Logo */}
-        <div className="h-16 flex items-center px-4 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center shadow-sm">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <span className="font-bold text-slate-800 dark:text-slate-100">Naviya AI</span>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Career Intelligence</p>
-            </div>
-          </div>
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100 dark:border-slate-800/60">
+          <AnimatePresence>
+            {!sidebarCollapsed && (
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.15 }}
+                className="overflow-hidden"
+              >
+                <span className="font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">NAVIYA</span>
+                <p className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">Career Intelligence</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Collapse toggle */}
+          <button
+            onClick={() => setSidebarCollapsed(prev => !prev)}
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors flex-shrink-0"
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Main Navigation */}
-        <nav className="p-3 space-y-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
-          <div className="px-3 py-2">
-            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Career Tools</span>
-          </div>
-          {careerNavItems.map(renderNavItem)}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+          {!sidebarCollapsed && (
+            <div className="px-3 py-2">
+              <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Career Tools</span>
+            </div>
+          )}
+          {careerNavItems.map((item) => renderNavItem(item, sidebarCollapsed))}
           
           {/* Divider */}
-          <div className="my-3 border-t border-slate-100 dark:border-slate-800" />
+          <div className="my-3 border-t border-slate-100 dark:border-slate-800/60" />
           
-          <div className="px-3 py-2">
-            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Resources</span>
-          </div>
-          {additionalNavItems.map(renderNavItem)}
+          {!sidebarCollapsed && (
+            <div className="px-3 py-2">
+              <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Resources</span>
+            </div>
+          )}
+          {additionalNavItems.map((item) => renderNavItem(item, sidebarCollapsed))}
         </nav>
 
         {/* Bottom Area: Theme Toggle + User + Agent Status */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-300">
+        <div className="border-t border-slate-100 dark:border-slate-800/60 bg-white dark:bg-[#0d1220] transition-colors duration-300">
           {/* Theme Toggle */}
           <div className="px-3 pt-3 pb-1">
             <button
               onClick={toggleTheme}
-              className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl
-                bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700
-                transition-all duration-200 group"
+              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} gap-2 px-3 py-2 rounded-xl
+                bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700/50
+                transition-all duration-200 group`}
               title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               <div className="flex items-center gap-2">
-                {dark ? <Sun className="w-4 h-4 text-lime-400" /> : <Moon className="w-4 h-4 text-slate-500" />}
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                  {dark ? 'Light Mode' : 'Dark Mode'}
-                </span>
+                {dark ? <Sun className="w-4 h-4 text-blue-400" /> : <Moon className="w-4 h-4 text-slate-500" />}
+                {!sidebarCollapsed && (
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                    {dark ? 'Light Mode' : 'Dark Mode'}
+                  </span>
+                )}
               </div>
-              <div className={`w-9 h-5 rounded-full relative transition-colors duration-300 ${dark ? 'bg-lime-500' : 'bg-slate-300'}`}>
-                <motion.div
-                  className="w-4 h-4 rounded-full bg-white shadow-sm absolute top-0.5"
-                  animate={{ left: dark ? 18 : 2 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-              </div>
+              {!sidebarCollapsed && (
+                <div className={`w-9 h-5 rounded-full relative transition-colors duration-300 ${dark ? 'bg-blue-500' : 'bg-slate-300'}`}>
+                  <motion.div
+                    className="w-4 h-4 rounded-full bg-white shadow-sm absolute top-0.5"
+                    animate={{ left: dark ? 18 : 2 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  />
+                </div>
+              )}
             </button>
           </div>
 
           {/* User Info */}
-          <div className="p-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="p-3 border-b border-slate-100 dark:border-slate-800/60">
             <div className="flex items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-lime-500/20 flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4 text-amber-600 dark:text-lime-400" />
+                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-                    {user?.name || 'User'}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                    {user?.email || ''}
-                  </p>
-                </div>
+                {!sidebarCollapsed && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                      {user?.name || 'User'}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {user?.email || ''}
+                    </p>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
-                title="Logout"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
+              {!sidebarCollapsed && (
+                <button
+                  onClick={handleLogout}
+                  className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
           
           {/* Agent Status */}
           <div className="p-3">
-            <div className="flex items-center justify-between">
+            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs text-slate-500 dark:text-slate-400">AI Agents Active</span>
+                {!sidebarCollapsed && (
+                  <span className="text-xs text-slate-500 dark:text-slate-400">AI Agents Active</span>
+                )}
               </div>
-              <span className="text-xs text-slate-400 dark:text-slate-500">
-                {unlockedFeatures?.length || 0}/5
-              </span>
+              {!sidebarCollapsed && (
+                <span className="text-xs text-slate-400 dark:text-slate-500">
+                  {unlockedFeatures?.length || 0}/5
+                </span>
+              )}
             </div>
-            {dashboardState?.last_updated_by_agent && (
+            {!sidebarCollapsed && dashboardState?.last_updated_by_agent && (
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 truncate">
                 Last: {dashboardState.last_updated_by_agent}
               </p>
             )}
           </div>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main Content Area */}
-      <main className="ml-64 h-screen overflow-y-auto">
+      <motion.main
+        className="h-screen overflow-y-auto"
+        animate={{ marginLeft: sidebarCollapsed ? 72 : 256 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      >
         <Outlet />
-      </main>
+      </motion.main>
     </div>
   );
 };

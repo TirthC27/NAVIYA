@@ -7,6 +7,9 @@ import { ThemeProvider } from './context/ThemeContext';
 // Opik Metrics Toast (global LLM observability popup)
 import { OpikToastProvider } from './context/OpikToastContext';
 
+// Onboarding Context (guided non-intrusive onboarding)
+import { OnboardingProvider } from './context/OnboardingContext';
+
 // Auth Pages
 import Home from './pages/Home';
 import Auth from './pages/Auth';
@@ -68,6 +71,7 @@ function App() {
   return (
     <ThemeProvider>
     <OpikToastProvider>
+    <OnboardingProvider userId={userId}>
     <Router>
       <Routes>
         {/* Public Routes - Redirect to dashboard if authenticated */}
@@ -118,6 +122,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
+    </OnboardingProvider>
     </OpikToastProvider>
     </ThemeProvider>
   );

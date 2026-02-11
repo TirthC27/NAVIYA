@@ -139,7 +139,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
             <img src="/Vector_images/logo.png" alt="Logo" className="w-8 h-8" />
-            <span className="text-xl font-bold tracking-tight text-slate-900">NAVIYA</span>
+          
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-slate-600">
             <a href="#features" className="hover:text-amber-600 transition-colors">Features</a>
@@ -458,7 +458,7 @@ const Home = () => {
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center gap-2 mb-4">
                 <img src="/Vector_images/logo.png" alt="Logo" className="w-8 h-8" />
-                <span className="font-bold text-xl text-slate-900">NAVIYA</span>
+               
               </div>
               <p className="text-slate-600 text-sm mb-4 max-w-md">
                 Your AI-powered career intelligence companion. Transform your career journey with multi-agent AI systems, adaptive learning, and personalized roadmaps.

@@ -14,19 +14,25 @@ import {
   Clock,
   AlertCircle,
   Check,
-  Sparkles
+  Sparkles,
+  SkipForward,
+  Brain,
+  Route,
+  Zap,
+  MessageSquare,
+  ArrowRight
 } from 'lucide-react';
 
 const TOTAL_STEPS = 5;
 
 // Domain options with icons
 const DOMAIN_OPTIONS = [
-  { value: 'Technology / Engineering', icon: Briefcase, color: 'bg-blue-50 border-blue-200 text-blue-700' },
-  { value: 'Medical / Healthcare', icon: Stethoscope, color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
-  { value: 'Business', icon: Building2, color: 'bg-purple-50 border-purple-200 text-purple-700' },
-  { value: 'Government Exams', icon: FileText, color: 'bg-orange-50 border-orange-200 text-orange-700' },
-  { value: 'Design / Creative', icon: Palette, color: 'bg-pink-50 border-pink-200 text-pink-700' },
-  { value: 'Other', icon: MoreHorizontal, color: 'bg-slate-50 border-slate-200 text-slate-700' },
+  { value: 'Technology / Engineering', icon: Briefcase, color: 'border-blue-500/30 text-blue-400', bgActive: 'bg-blue-500/10 border-blue-500/50' },
+  { value: 'Medical / Healthcare', icon: Stethoscope, color: 'border-emerald-500/30 text-emerald-400', bgActive: 'bg-emerald-500/10 border-emerald-500/50' },
+  { value: 'Business', icon: Building2, color: 'border-purple-500/30 text-purple-400', bgActive: 'bg-purple-500/10 border-purple-500/50' },
+  { value: 'Government Exams', icon: FileText, color: 'border-orange-500/30 text-orange-400', bgActive: 'bg-orange-500/10 border-orange-500/50' },
+  { value: 'Design / Creative', icon: Palette, color: 'border-pink-500/30 text-pink-400', bgActive: 'bg-pink-500/10 border-pink-500/50' },
+  { value: 'Other', icon: MoreHorizontal, color: 'border-slate-500/30 text-slate-400', bgActive: 'bg-slate-500/10 border-slate-500/50' },
 ];
 
 const EDUCATION_OPTIONS = [
@@ -244,15 +250,17 @@ const Onboarding = () => {
   const renderProgress = () => (
     <div className="flex items-center justify-center gap-2 mb-8">
       {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-        <div
+        <motion.div
           key={i}
-          className={`h-2 rounded-full transition-all duration-300 ${
+          className={`h-1 rounded-full transition-all duration-500 ${
             i + 1 === currentStep
-              ? 'w-8 bg-amber-400'
+              ? 'w-10 bg-gradient-to-r from-blue-500 to-purple-500'
               : i + 1 < currentStep
-              ? 'w-2 bg-amber-400'
-              : 'w-2 bg-slate-200'
+              ? 'w-3 bg-blue-500'
+              : 'w-3 bg-slate-700'
           }`}
+          layout
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         />
       ))}
     </div>
@@ -280,32 +288,37 @@ const Onboarding = () => {
       case 1:
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-slate-800 text-center mb-1">
+            <h2 className="text-xl font-semibold text-white text-center mb-1">
               Which domain are you aiming for?
             </h2>
-            <p className="text-slate-500 text-center text-sm mb-4">
-              This helps us personalize your career roadmap
+            <p className="text-slate-400 text-center text-sm mb-4">
+              This helps our AI agents personalize your career roadmap
             </p>
             <div className="grid grid-cols-2 gap-2">
               {DOMAIN_OPTIONS.map((option) => (
-                <button
+                <motion.button
                   key={option.value}
                   onClick={() => updateField('selected_domain', option.value)}
-                  className={`p-3 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-1.5 ${
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`p-3 rounded-xl border transition-all duration-300 flex flex-col items-center gap-1.5 ${
                     formData.selected_domain === option.value
-                      ? 'border-amber-400 bg-amber-50'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                      ? option.bgActive + ' shadow-lg'
+                      : 'border-slate-700/50 bg-white/[0.03] hover:bg-white/[0.06] hover:border-slate-600'
                   }`}
+                  style={formData.selected_domain === option.value ? {
+                    boxShadow: '0 0 20px rgba(59, 130, 246, 0.1)'
+                  } : {}}
                 >
                   <option.icon className={`w-5 h-5 ${
-                    formData.selected_domain === option.value ? 'text-amber-600' : 'text-slate-500'
+                    formData.selected_domain === option.value ? option.color.split(' ')[1] : 'text-slate-500'
                   }`} />
                   <span className={`text-xs font-medium ${
-                    formData.selected_domain === option.value ? 'text-amber-800' : 'text-slate-700'
+                    formData.selected_domain === option.value ? 'text-white' : 'text-slate-400'
                   }`}>
                     {option.value}
                   </span>
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -314,29 +327,34 @@ const Onboarding = () => {
       case 2:
         return (
           <div className="space-y-3">
-            <h2 className="text-xl font-semibold text-slate-800 text-center mb-1">
+            <h2 className="text-xl font-semibold text-white text-center mb-1">
               What's your current education level?
             </h2>
-            <p className="text-slate-500 text-center text-sm mb-4">
+            <p className="text-slate-400 text-center text-sm mb-4">
               Help us understand your background
             </p>
             <div className="grid grid-cols-2 gap-2">
               {EDUCATION_OPTIONS.map((option) => (
-                <button
+                <motion.button
                   key={option}
                   onClick={() => updateField('education_level', option)}
-                  className={`p-2.5 rounded-xl border-2 transition-all duration-200 ${
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`p-2.5 rounded-xl border transition-all duration-300 ${
                     formData.education_level === option
-                      ? 'border-amber-400 bg-amber-50'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                      ? 'border-blue-500/50 bg-blue-500/10 shadow-lg'
+                      : 'border-slate-700/50 bg-white/[0.03] hover:bg-white/[0.06] hover:border-slate-600'
                   }`}
+                  style={formData.education_level === option ? {
+                    boxShadow: '0 0 20px rgba(59, 130, 246, 0.1)'
+                  } : {}}
                 >
                   <span className={`text-sm font-medium ${
-                    formData.education_level === option ? 'text-amber-800' : 'text-slate-700'
+                    formData.education_level === option ? 'text-blue-300' : 'text-slate-400'
                   }`}>
                     {option}
                   </span>
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -345,35 +363,46 @@ const Onboarding = () => {
       case 3:
         return (
           <div className="space-y-3">
-            <h2 className="text-xl font-semibold text-slate-800 text-center mb-1">
+            <h2 className="text-xl font-semibold text-white text-center mb-1">
               How would you rate yourself?
             </h2>
-            <p className="text-slate-500 text-center text-sm mb-4">
+            <p className="text-slate-400 text-center text-sm mb-4">
               Be honest — this helps us calibrate your path
             </p>
             <div className="space-y-2">
               {LEVEL_OPTIONS.map((option) => (
-                <button
+                <motion.button
                   key={option.value}
                   onClick={() => updateField('self_assessed_level', option.value)}
-                  className={`w-full p-3 rounded-xl border-2 transition-all duration-200 flex items-center justify-between ${
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className={`w-full p-3 rounded-xl border transition-all duration-300 flex items-center justify-between ${
                     formData.self_assessed_level === option.value
-                      ? 'border-amber-400 bg-amber-50'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                      ? 'border-purple-500/50 bg-purple-500/10 shadow-lg'
+                      : 'border-slate-700/50 bg-white/[0.03] hover:bg-white/[0.06] hover:border-slate-600'
                   }`}
+                  style={formData.self_assessed_level === option.value ? {
+                    boxShadow: '0 0 20px rgba(139, 92, 246, 0.1)'
+                  } : {}}
                 >
                   <div className="text-left">
                     <span className={`text-sm font-medium ${
-                      formData.self_assessed_level === option.value ? 'text-amber-800' : 'text-slate-700'
+                      formData.self_assessed_level === option.value ? 'text-purple-300' : 'text-slate-300'
                     }`}>
                       {option.label}
                     </span>
-                    <p className="text-xs text-slate-400">{option.description}</p>
+                    <p className="text-xs text-slate-500">{option.description}</p>
                   </div>
                   {formData.self_assessed_level === option.value && (
-                    <Check className="w-4 h-4 text-amber-600" />
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 500 }}
+                    >
+                      <Check className="w-4 h-4 text-purple-400" />
+                    </motion.div>
                   )}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -382,40 +411,51 @@ const Onboarding = () => {
       case 4:
         return (
           <div className="space-y-3">
-            <h2 className="text-xl font-semibold text-slate-800 text-center mb-1">
+            <h2 className="text-xl font-semibold text-white text-center mb-1">
               How many hours per week can you give?
             </h2>
-            <p className="text-slate-500 text-center text-sm mb-4">
+            <p className="text-slate-400 text-center text-sm mb-4">
               Be realistic — consistency beats intensity
             </p>
             <div className="space-y-2">
               {HOURS_OPTIONS.map((option) => (
-                <button
+                <motion.button
                   key={option.value}
                   onClick={() => updateField('weekly_hours', option.value)}
-                  className={`w-full p-3 rounded-xl border-2 transition-all duration-200 flex items-center justify-between ${
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  className={`w-full p-3 rounded-xl border transition-all duration-300 flex items-center justify-between ${
                     formData.weekly_hours === option.value
-                      ? 'border-amber-400 bg-amber-50'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                      ? 'border-emerald-500/50 bg-emerald-500/10 shadow-lg'
+                      : 'border-slate-700/50 bg-white/[0.03] hover:bg-white/[0.06] hover:border-slate-600'
                   }`}
+                  style={formData.weekly_hours === option.value ? {
+                    boxShadow: '0 0 20px rgba(16, 185, 129, 0.1)'
+                  } : {}}
                 >
                   <div className="flex items-center gap-3">
                     <Clock className={`w-4 h-4 ${
-                      formData.weekly_hours === option.value ? 'text-amber-600' : 'text-slate-400'
+                      formData.weekly_hours === option.value ? 'text-emerald-400' : 'text-slate-500'
                     }`} />
                     <div className="text-left">
                       <span className={`text-sm font-medium ${
-                        formData.weekly_hours === option.value ? 'text-amber-800' : 'text-slate-700'
+                        formData.weekly_hours === option.value ? 'text-emerald-300' : 'text-slate-300'
                       }`}>
                         {option.label}
                       </span>
-                      <p className="text-xs text-slate-400">{option.description}</p>
+                      <p className="text-xs text-slate-500">{option.description}</p>
                     </div>
                   </div>
                   {formData.weekly_hours === option.value && (
-                    <Check className="w-4 h-4 text-amber-600" />
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 500 }}
+                    >
+                      <Check className="w-4 h-4 text-emerald-400" />
+                    </motion.div>
                   )}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -424,19 +464,21 @@ const Onboarding = () => {
       case 5:
         return (
           <div className="space-y-3">
-            <h2 className="text-xl font-semibold text-slate-800 text-center mb-1">
+            <h2 className="text-xl font-semibold text-white text-center mb-1">
               What's holding you back the most?
             </h2>
-            <p className="text-slate-500 text-center text-sm mb-4">
-              Understanding your challenges helps us help you better
+            <p className="text-slate-400 text-center text-sm mb-4">
+              Understanding your challenges helps our agents help you better
             </p>
             <div className="relative">
-              <AlertCircle className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+              <AlertCircle className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
               <textarea
                 value={formData.primary_blocker}
                 onChange={(e) => updateField('primary_blocker', e.target.value)}
                 placeholder="e.g., I struggle with staying consistent, or I don't know where to start, or I lack practical experience..."
-                className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-amber-400 focus:ring-0 outline-none transition-colors resize-none text-sm text-slate-700 placeholder:text-slate-400"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-700/50 bg-white/[0.03] 
+                  focus:border-blue-500/50 focus:ring-0 focus:bg-white/[0.05] outline-none transition-all duration-300 
+                  resize-none text-sm text-slate-300 placeholder:text-slate-600"
                 rows={3}
               />
             </div>
@@ -449,36 +491,67 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-amber-50/30 flex items-center justify-center p-4">
-      {/* Background decoration */}
-      <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-amber-100/20 rounded-full blur-3xl" />
+    <div className="min-h-screen naviya-bg flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Ambient background glow */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="w-full max-w-md">
+      {/* Floating particles */}
+      {[...Array(5)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 rounded-full bg-blue-400/20"
+          style={{ left: `${15 + i * 18}%`, top: `${20 + i * 12}%` }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.2, 0.5, 0.2],
+          }}
+          transition={{
+            duration: 4 + i,
+            repeat: Infinity,
+            delay: i * 0.5,
+          }}
+        />
+      ))}
+
+      <div className="w-full max-w-md relative z-10">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
+        <motion.div
+          className="flex items-center justify-center gap-3 mb-8"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <span className="text-lg font-bold text-slate-800">Naviya</span>
-        </div>
+          <span className="text-xl font-bold text-white">NAVIYA</span>
+        </motion.div>
 
         {/* Progress */}
         {renderProgress()}
 
         {/* Step indicator */}
-        <p className="text-center text-xs text-slate-500 mb-4">
+        <motion.p
+          className="text-center text-xs text-slate-500 mb-5"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
           Step {currentStep} of {TOTAL_STEPS}
-        </p>
+        </motion.p>
 
         {/* Card */}
         <motion.div
           key={currentStep}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-6 border border-slate-100"
+          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.98 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="naviya-glass rounded-2xl p-6 border border-white/[0.08] shadow-2xl shadow-black/20"
         >
+          {/* Top glow line */}
+          <div className="absolute -top-px left-1/2 -translate-x-1/2 w-24 h-[1px] bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
+
           {renderStepContent()}
 
           {/* Error message */}
@@ -486,7 +559,7 @@ const Onboarding = () => {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm flex items-center gap-2"
+              className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2"
             >
               <AlertCircle className="w-4 h-4" />
               {error}
@@ -498,10 +571,10 @@ const Onboarding = () => {
             <button
               onClick={handlePrevious}
               disabled={currentStep === 1 || loading}
-              className={`flex items-center gap-1 px-4 py-2 rounded-lg transition-all ${
+              className={`flex items-center gap-1 px-4 py-2 rounded-lg transition-all duration-200 ${
                 currentStep === 1
-                  ? 'text-slate-300 cursor-not-allowed'
-                  : 'text-slate-600 hover:bg-slate-50'
+                  ? 'text-slate-600 cursor-not-allowed'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]'
               }`}
             >
               <ChevronLeft className="w-4 h-4" />
@@ -511,14 +584,18 @@ const Onboarding = () => {
             <button
               onClick={handleNext}
               disabled={loading}
-              className="flex items-center gap-1 px-6 py-2.5 rounded-lg bg-amber-400 text-slate-900 font-medium hover:bg-amber-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl
+                bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium text-sm
+                hover:from-blue-500 hover:to-purple-500 transition-all duration-300
+                shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30
+                disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : currentStep === TOTAL_STEPS ? (
                 <>
-                  Complete
-                  <Check className="w-4 h-4" />
+                  Launch Dashboard
+                  <ArrowRight className="w-4 h-4" />
                 </>
               ) : (
                 <>
@@ -530,11 +607,50 @@ const Onboarding = () => {
           </div>
         </motion.div>
 
-        {/* Skip hint (only on first step) */}
+        {/* Skip option */}
+        <motion.div
+          className="flex items-center justify-center gap-2 mt-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <button
+            onClick={() => navigate('/career/dashboard')}
+            className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-400 transition-colors"
+          >
+            <SkipForward className="w-3 h-3" />
+            <span>Skip setup & explore dashboard</span>
+          </button>
+        </motion.div>
+
+        {/* Agent activation teaser */}
         {currentStep === 1 && (
-          <p className="text-center text-xs text-slate-400 mt-6">
-            This helps our AI agents personalize your experience
-          </p>
+          <motion.div
+            className="flex items-center justify-center gap-4 mt-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+          >
+            {[
+              { icon: Brain, label: 'Supervisor' },
+              { icon: FileText, label: 'Resume' },
+              { icon: Route, label: 'Roadmap' },
+              { icon: Zap, label: 'Skills' },
+            ].map((agent, i) => (
+              <motion.div
+                key={agent.label}
+                className="flex flex-col items-center gap-1"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 0.4, y: 0 }}
+                transition={{ delay: 1 + i * 0.15 }}
+              >
+                <div className="w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                  <agent.icon className="w-3.5 h-3.5 text-slate-500" />
+                </div>
+                <span className="text-[9px] text-slate-600">{agent.label}</span>
+              </motion.div>
+            ))}
+          </motion.div>
         )}
       </div>
     </div>

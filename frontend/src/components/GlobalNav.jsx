@@ -66,7 +66,6 @@ const GlobalNav = () => {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-bold text-white">Naviya</span>
           </Link>
 
           {/* Nav Links */}

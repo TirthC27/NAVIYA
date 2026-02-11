@@ -96,7 +96,7 @@ const Auth = () => {
         {/* Logo */}
         <div className="flex items-center gap-2">
           <img src="/Vector_images/logo.png" alt="Logo" className="w-8 h-8" />
-          <span className="text-xl font-bold text-slate-800 tracking-tight">NAVIYA</span>
+      
         </div>
 
         {/* Form area */}

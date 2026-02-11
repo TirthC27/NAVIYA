@@ -9,3 +9,8 @@ export {
   FeatureGate,
   DashboardStateLoader 
 } from './DashboardStateContext';
+
+export { 
+  OnboardingProvider, 
+  useOnboarding 
+} from './OnboardingContext';
