@@ -246,9 +246,9 @@ async def _transcribe_via_gemini(
             # Parse labeled transcript into segments
             segments = _parse_labeled_transcript(text)
 
-        end_trace(trace_id, output={
-            "response_length": len(text),
-            "latency_ms": round(latency_ms, 1),
+            end_trace(trace_id, output={
+                "response_length": len(text),
+                "latency_ms": round(latency_ms, 1),
                 "model": model,
                 "segments_count": len(segments),
             }, status="success")
@@ -261,15 +261,6 @@ async def _transcribe_via_gemini(
         502,
         f"Transcription failed (all models exhausted). Last error: {last_error}",
     )
-    segments = []
-    for i, sentence in enumerate(sentences):
-        if sentence.strip():
-            segments.append({
-                "id": i,
-                "text": sentence.strip(),
-                "speaker": "INTERVIEWER" if i % 2 == 0 else "CANDIDATE",
-            })
-    return segments
 
 
 def _parse_labeled_transcript(text: str) -> List[Dict]:
