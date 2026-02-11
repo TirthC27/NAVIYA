@@ -79,6 +79,30 @@ def _convert_webm_to_wav(input_path: str, output_path: str) -> bool:
 # Transcription via OpenRouter (Whisper)
 # ============================================
 
+def _text_to_segments(text: str) -> List[Dict]:
+    """
+    Convert plain text transcript to segments.
+    Splits by sentences, creates segment objects with IDs.
+    """
+    if not text or not text.strip():
+        return []
+    
+    import re
+    # Split by sentence boundaries (. ! ?) followed by space or newline
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
+    
+    segments = []
+    for i, sentence in enumerate(sentences):
+        sentence = sentence.strip()
+        if sentence:
+            segments.append({
+                "id": i,
+                "text": sentence,
+            })
+    
+    return segments
+
+
 async def transcribe_audio_openrouter(audio_path: str) -> Dict[str, Any]:
     """
     Transcribe audio using OpenRouter's whisper endpoint.
