@@ -17,9 +17,18 @@ from app.observability.request_metrics import store_opik_metrics
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
+# Fallback model when primary is rate-limited (429).
+# google/gemini-2.0-flash-001 is proven stable via Topic Explainer.
+FALLBACK_MODEL = "google/gemini-2.0-flash-001"
+
 
 class LLMError(Exception):
     """Custom exception for LLM errors"""
+    pass
+
+
+class RateLimitError(LLMError):
+    """Raised when the upstream model is rate-limited (429)"""
     pass
 
 
@@ -52,8 +61,8 @@ async def call_gemini(prompt: str, system_prompt: Optional[str] = None) -> str:
     headers = {
         "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://resume-ai-agent-parser.local",
-        "X-Title": "Resume AI Agent Parser"
+        "HTTP-Referer": "https://naviya-dun.vercel.app",
+        "X-Title": "NAVIYA",
     }
     
     messages = []
@@ -76,7 +85,11 @@ async def call_gemini(prompt: str, system_prompt: Optional[str] = None) -> str:
         "max_tokens": 8000
     }
     
-    try:
+    async def _do_request(model_name: str, is_fallback: bool = False) -> str:
+        """Execute a single OpenRouter request. Extracted for fallback retry."""
+        payload["model"] = model_name
+        tag = "[fallback]" if is_fallback else "[primary]"
+
         async with httpx.AsyncClient(timeout=60.0) as client:
             t0 = time.time()
             response = await client.post(
@@ -90,6 +103,19 @@ async def call_gemini(prompt: str, system_prompt: Optional[str] = None) -> str:
                 end_trace(trace_id, output={"error": "credits_required"}, status="error")
                 raise LLMError("OpenRouter API requires credits. Please add credits at https://openrouter.ai/credits")
             
+            # ── 429 Rate-limit handling ──
+            if response.status_code == 429:
+                print(f"  [LLM] {tag} 429 rate-limited on {model_name}")
+                if not is_fallback:
+                    # Retry once with fallback model
+                    print(f"  [LLM] Switching to fallback model: {FALLBACK_MODEL}")
+                    return await _do_request(FALLBACK_MODEL, is_fallback=True)
+                # Fallback also rate-limited — raise clearly
+                raise RateLimitError(
+                    f"Both {settings.GEMINI_MODEL} and {FALLBACK_MODEL} are rate-limited. "
+                    f"Please retry shortly."
+                )
+
             response.raise_for_status()
             
             data = response.json()
@@ -101,7 +127,7 @@ async def call_gemini(prompt: str, system_prompt: Optional[str] = None) -> str:
             # Extract token usage if available
             usage = data.get("usage", {})
 
-            _model = data.get("model", settings.GEMINI_MODEL)
+            _model = data.get("model", model_name)
             _pt = usage.get("prompt_tokens", 0)
             _ct = usage.get("completion_tokens", 0)
             _tt = usage.get("total_tokens", 0)
@@ -110,6 +136,7 @@ async def call_gemini(prompt: str, system_prompt: Optional[str] = None) -> str:
                 "response_length": len(result),
                 "latency_ms": round(latency_ms, 1),
                 "model": _model,
+                "used_fallback": is_fallback,
                 "prompt_tokens": _pt,
                 "completion_tokens": _ct,
                 "total_tokens": _tt,
@@ -128,10 +155,13 @@ async def call_gemini(prompt: str, system_prompt: Optional[str] = None) -> str:
             )
 
             return result
+
+    try:
+        return await _do_request(settings.GEMINI_MODEL)
             
     except httpx.HTTPStatusError as e:
         end_trace(trace_id, output={"error": f"HTTP {e.response.status_code}"}, status="error")
-        store_opik_metrics(agent_name="LLM_call_gemini", latency_ms=(time.time()-t0)*1000 if 't0' in dir() else 0, model=settings.GEMINI_MODEL, status="error")
+        store_opik_metrics(agent_name="LLM_call_gemini", latency_ms=0, model=settings.GEMINI_MODEL, status="error")
         raise LLMError(f"API request failed: {e.response.status_code} - {e.response.text}")
     except httpx.RequestError as e:
         end_trace(trace_id, output={"error": str(e)}, status="error")
@@ -141,7 +171,7 @@ async def call_gemini(prompt: str, system_prompt: Optional[str] = None) -> str:
         end_trace(trace_id, output={"error": str(e)}, status="error")
         store_opik_metrics(agent_name="LLM_call_gemini", latency_ms=0, model=settings.GEMINI_MODEL, status="error")
         raise LLMError(f"Unexpected API response format: {str(e)}")
-    except LLMError:
+    except (LLMError, RateLimitError):
         raise  # Already traced above
     except Exception as e:
         end_trace(trace_id, output={"error": str(e)}, status="error")
@@ -178,8 +208,8 @@ def call_gemini_sync(prompt: str, system_prompt: Optional[str] = None) -> str:
     headers = {
         "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://resume-ai-agent-parser.local",
-        "X-Title": "Resume AI Agent Parser"
+        "HTTP-Referer": "https://naviya-dun.vercel.app",
+        "X-Title": "NAVIYA",
     }
     
     messages = []
@@ -201,8 +231,12 @@ def call_gemini_sync(prompt: str, system_prompt: Optional[str] = None) -> str:
         "temperature": 0.1,
         "max_tokens": 8000
     }
-    
-    try:
+
+    def _do_request_sync(model_name: str, is_fallback: bool = False) -> str:
+        """Execute a single OpenRouter request (sync). Extracted for fallback retry."""
+        payload["model"] = model_name
+        tag = "[fallback]" if is_fallback else "[primary]"
+
         with httpx.Client(timeout=60.0) as client:
             t0 = time.time()
             response = client.post(
@@ -216,6 +250,17 @@ def call_gemini_sync(prompt: str, system_prompt: Optional[str] = None) -> str:
                 end_trace(trace_id, output={"error": "credits_required"}, status="error")
                 raise LLMError("OpenRouter API requires credits. Please add credits at https://openrouter.ai/credits")
             
+            # ── 429 Rate-limit handling ──
+            if response.status_code == 429:
+                print(f"  [LLM-sync] {tag} 429 rate-limited on {model_name}")
+                if not is_fallback:
+                    print(f"  [LLM-sync] Switching to fallback model: {FALLBACK_MODEL}")
+                    return _do_request_sync(FALLBACK_MODEL, is_fallback=True)
+                raise RateLimitError(
+                    f"Both {settings.GEMINI_MODEL} and {FALLBACK_MODEL} are rate-limited. "
+                    f"Please retry shortly."
+                )
+
             response.raise_for_status()
             
             data = response.json()
@@ -226,7 +271,7 @@ def call_gemini_sync(prompt: str, system_prompt: Optional[str] = None) -> str:
 
             usage = data.get("usage", {})
 
-            _model = data.get("model", settings.GEMINI_MODEL)
+            _model = data.get("model", model_name)
             _pt = usage.get("prompt_tokens", 0)
             _ct = usage.get("completion_tokens", 0)
             _tt = usage.get("total_tokens", 0)
@@ -235,6 +280,7 @@ def call_gemini_sync(prompt: str, system_prompt: Optional[str] = None) -> str:
                 "response_length": len(result),
                 "latency_ms": round(latency_ms, 1),
                 "model": _model,
+                "used_fallback": is_fallback,
                 "prompt_tokens": _pt,
                 "completion_tokens": _ct,
                 "total_tokens": _tt,
@@ -252,10 +298,13 @@ def call_gemini_sync(prompt: str, system_prompt: Optional[str] = None) -> str:
             )
 
             return result
+    
+    try:
+        return _do_request_sync(settings.GEMINI_MODEL)
             
     except httpx.HTTPStatusError as e:
         end_trace(trace_id, output={"error": f"HTTP {e.response.status_code}"}, status="error")
-        store_opik_metrics(agent_name="LLM_call_gemini_sync", latency_ms=(time.time()-t0)*1000 if 't0' in dir() else 0, model=settings.GEMINI_MODEL, status="error")
+        store_opik_metrics(agent_name="LLM_call_gemini_sync", latency_ms=0, model=settings.GEMINI_MODEL, status="error")
         raise LLMError(f"API request failed: {e.response.status_code} - {e.response.text}")
     except httpx.RequestError as e:
         end_trace(trace_id, output={"error": str(e)}, status="error")
@@ -265,7 +314,7 @@ def call_gemini_sync(prompt: str, system_prompt: Optional[str] = None) -> str:
         end_trace(trace_id, output={"error": str(e)}, status="error")
         store_opik_metrics(agent_name="LLM_call_gemini_sync", latency_ms=0, model=settings.GEMINI_MODEL, status="error")
         raise LLMError(f"Unexpected API response format: {str(e)}")
-    except LLMError:
+    except (LLMError, RateLimitError):
         raise
     except Exception as e:
         end_trace(trace_id, output={"error": str(e)}, status="error")

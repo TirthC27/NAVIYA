@@ -187,8 +187,11 @@ async def _transcribe_via_gemini(
         "Content-Type": "application/json",
     }
 
+    # Use primary model, but fall back if rate-limited
+    models_to_try = [settings.GEMINI_MODEL, "google/gemini-2.0-flash-001"]
+
     payload = {
-        "model": settings.GEMINI_MODEL,
+        "model": models_to_try[0],
         "messages": [
             {
                 "role": "user",
@@ -217,40 +220,47 @@ async def _transcribe_via_gemini(
         "max_tokens": 8000,
     }
 
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        t0 = _time.time()
-        response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
-        latency_ms = (_time.time() - t0) * 1000
+    last_error = None
+    for model in models_to_try:
+        payload["model"] = model
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            t0 = _time.time()
+            response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
+            latency_ms = (_time.time() - t0) * 1000
 
-        if response.status_code != 200:
-            error_text = response.text
-            print(f"[Transcribe-Gemini] Error ({response.status_code}): {error_text}")
-            end_trace(trace_id, output={"error": f"HTTP {response.status_code}"}, status="error")
-            raise HTTPException(
-                502,
-                f"Transcription failed. OpenRouter returned {response.status_code}",
-            )
+            if response.status_code == 429:
+                print(f"[Transcribe-Gemini] 429 rate-limited on {model}, trying next...")
+                last_error = f"Rate-limited on {model}"
+                continue
 
-        data = response.json()
-        text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            if response.status_code != 200:
+                error_text = response.text
+                print(f"[Transcribe-Gemini] Error ({response.status_code}): {error_text}")
+                end_trace(trace_id, output={"error": f"HTTP {response.status_code}"}, status="error")
+                last_error = f"HTTP {response.status_code}: {error_text[:200]}"
+                continue
 
-        # Parse labeled transcript into segments
-        segments = _parse_labeled_transcript(text)
+            data = response.json()
+            text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+            # Parse labeled transcript into segments
+            segments = _parse_labeled_transcript(text)
 
         end_trace(trace_id, output={
             "response_length": len(text),
             "latency_ms": round(latency_ms, 1),
-            "model": settings.GEMINI_MODEL,
-            "segments_count": len(segments),
-        }, status="success")
+                "model": model,
+                "segments_count": len(segments),
+            }, status="success")
 
-        return {"text": text, "segments": segments}
+            return {"text": text, "segments": segments}
 
-
-def _text_to_segments(text: str) -> List[Dict]:
-    """Split plain text into rough segments (sentence-level)"""
-    import re
-    sentences = re.split(r"(?<=[.!?])\s+", text)
+    # All models exhausted
+    end_trace(trace_id, output={"error": f"All models failed: {last_error}"}, status="error")
+    raise HTTPException(
+        502,
+        f"Transcription failed (all models exhausted). Last error: {last_error}",
+    )
     segments = []
     for i, sentence in enumerate(sentences):
         if sentence.strip():
@@ -453,7 +463,18 @@ async def full_interview_session(
     transcription = await transcribe_interview_audio(file=file, user_id=user_id)
 
     if not transcription.success or not transcription.segments:
-        raise HTTPException(500, "Transcription failed or produced no segments")
+        # Graceful degradation: return partial result instead of hard 500
+        return InterviewSessionResponse(
+            success=False,
+            session_id=str(uuid.uuid4()),
+            transcript="Transcription temporarily unavailable. Please try again shortly.",
+            segments=[],
+            evaluation={
+                "status": "degraded",
+                "reason": "transcription_failed",
+                "message": "AI transcription is temporarily limited. Please retry in a moment.",
+            },
+        )
 
     # Step 2: Evaluate
     session_id = str(uuid.uuid4())
@@ -651,11 +672,27 @@ async def interview_chat(req: InterviewChatRequest):
             )
             latency_ms = (_time.time() - t0) * 1000
 
+            if response.status_code == 429:
+                # Rate-limited — try fallback model
+                print(f"[InterviewChat] 429 rate-limited on google/gemini-2.0-flash-001")
+                end_trace(chat_trace_id, output={"error": "rate_limited"}, status="error")
+                return {
+                    "success": True,
+                    "reply": (
+                        "I'm temporarily experiencing high demand and can't generate a detailed response right now. "
+                        "Please try again in a moment. In the meantime, review your evaluation scores "
+                        "and feedback in the results panel above."
+                    ),
+                }
+
             if response.status_code != 200:
                 error_text = response.text[:300]
                 print(f"[InterviewChat] OpenRouter error {response.status_code}: {error_text}")
                 end_trace(chat_trace_id, output={"error": f"HTTP {response.status_code}"}, status="error")
-                raise HTTPException(status_code=502, detail="AI service temporarily unavailable")
+                return {
+                    "success": True,
+                    "reply": "AI service is temporarily unavailable. Please try again shortly.",
+                }
 
             data = response.json()
             reply = (
