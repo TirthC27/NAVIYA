@@ -10,6 +10,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { API_BASE_URL } from '../../api/config';
 import {
   DocumentArrowUpIcon,
   DocumentTextIcon,
@@ -124,7 +125,7 @@ export default function ResumeUpload({ userId, onUploadComplete }) {
       formData.append('filename', file.name);
       
       // Send to API
-      const response = await fetch(`/api/resume/upload/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/resume/upload/${userId}`, {
         method: 'POST',
         body: formData
       });

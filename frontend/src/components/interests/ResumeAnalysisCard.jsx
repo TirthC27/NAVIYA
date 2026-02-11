@@ -10,6 +10,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../api/config';
 import { 
   DocumentTextIcon, 
   ChartBarIcon,
@@ -126,7 +127,7 @@ export default function ResumeAnalysisCard({ userId }) {
   const fetchResumeData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/resume/dashboard/${userId}`);
+      const response = await fetch(`${API_BASE_URL}/api/resume/dashboard/${userId}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch resume data');

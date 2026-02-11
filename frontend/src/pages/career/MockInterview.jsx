@@ -119,7 +119,7 @@ const MockInterview = () => {
   // ─── Fetch past sessions ───
   useEffect(() => {
     if (!userId) return;
-    fetch(`/api/interview/sessions/${userId}`)
+    fetch(`${API_BASE}/api/interview/sessions/${userId}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success) setPastSessions(data.sessions || []);
@@ -239,7 +239,7 @@ const MockInterview = () => {
           formData.append('file', blob, 'interview_recording.webm');
           formData.append('user_id', userId);
 
-          const response = await fetch(`/api/interview/session`, {
+          const response = await fetch(`${API_BASE}/api/interview/session`, {
             method: 'POST',
             body: formData,
           });
@@ -308,7 +308,7 @@ const MockInterview = () => {
     setChatLoading(true);
 
     try {
-      const res = await fetch(`/api/interview/chat`, {
+      const res = await fetch(`${API_BASE}/api/interview/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
