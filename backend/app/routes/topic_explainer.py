@@ -28,12 +28,20 @@ from app.observability.opik_client import (
 router = APIRouter(prefix="/api/topic-explainer", tags=["Topic Explainer"])
 
 # ── Config ──────────────────────────────────────────────────
-# Hard-coded key as requested (NOT from system env)
-OPENROUTER_API_KEY = "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"
+# Use centralized API key from settings (.env) — same key that powers llm.py
+OPENROUTER_API_KEY = settings.OPENROUTER_API_KEY
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 RESEARCH_MODEL = "perplexity/sonar"            # fast; switch to "perplexity/sonar-deep-research" for deeper (slower) results
 IMAGE_MODEL = "google/gemini-3-pro-image-preview"
 NARRATION_MODEL = "google/gemini-2.0-flash-001"
+
+# ── Startup validation ─────────────────────────────────────
+if not OPENROUTER_API_KEY:
+    print("[CRITICAL] OPENROUTER_API_KEY is empty — topic-explainer will fail!")
+elif not OPENROUTER_API_KEY.startswith("sk-or-"):
+    print(f"[WARN] OPENROUTER_API_KEY does not start with 'sk-or-' — may be invalid")
+else:
+    print(f"[OK] Topic Explainer: OpenRouter key loaded ({len(OPENROUTER_API_KEY)} chars)")
 
 # In-memory session store  (production → use Redis / DB)
 _sessions: Dict[str, Dict] = {}
@@ -80,11 +88,17 @@ async def _openrouter_chat(
         tags=["llm", "topic-explainer", model.split("/")[-1]],
     )
 
+    # ── Auth guard: fail fast if key is missing ──
+    if not OPENROUTER_API_KEY:
+        end_trace(trace_id, output={"error": "OPENROUTER_API_KEY not configured"}, status="error")
+        raise HTTPException(status_code=500, detail="OpenRouter API key is not configured. Set OPENROUTER_API_KEY in .env")
+
+    # ── Headers: Authorization Bearer + required OpenRouter identity headers ──
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",  # Must be "Bearer <key>"
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://naviya.app",
-        "X-Title": "NAVIYA Topic Explainer",
+        "HTTP-Referer": "https://naviya-dun.vercel.app",   # Required by OpenRouter for identity
+        "X-Title": "NAVIYA",                               # Required by OpenRouter for identity
     }
     body: Dict[str, Any] = {
         "model": model,
@@ -111,6 +125,13 @@ async def _openrouter_chat(
                 detail = resp.text[:400]
                 last_error = f"OpenRouter error ({resp.status_code}): {detail}"
                 print(f"  [chat] Attempt {attempt} failed: {last_error}")
+                # Log auth failures with clear diagnostics
+                if resp.status_code == 401:
+                    print(f"  [AUTH] 401 Unauthorized — key starts with: {OPENROUTER_API_KEY[:10]}...")
+                    print(f"  [AUTH] Key length: {len(OPENROUTER_API_KEY)}, model: {model}")
+                    print(f"  [AUTH] Check: correct key in .env? Account active at openrouter.ai?")
+                    end_trace(trace_id, output={"error": last_error}, status="error")
+                    raise HTTPException(status_code=502, detail=f"OpenRouter auth failed (401): {detail}")
                 if resp.status_code in (429, 502, 503, 504):
                     import asyncio as _aio
                     await _aio.sleep(attempt * 5)
@@ -271,11 +292,12 @@ def _build_image_prompt(topic: str, slide: Dict) -> str:
 async def generate_slide_image(topic: str, slide: Dict) -> Optional[bytes]:
     """Generate one slide image via OpenRouter image model."""
     prompt = _build_image_prompt(topic, slide)
+    # Same auth headers as _openrouter_chat — Bearer + identity headers
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://naviya.app",
-        "X-Title": "NAVIYA PPT Generator",
+        "HTTP-Referer": "https://naviya-dun.vercel.app",
+        "X-Title": "NAVIYA",
     }
     body = {
         "model": IMAGE_MODEL,
