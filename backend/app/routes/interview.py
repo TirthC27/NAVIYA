@@ -86,7 +86,7 @@ async def transcribe_audio_openrouter(audio_path: str) -> Dict[str, Any]:
     """
     trace_id = start_trace(
         "Interview_Transcribe",
-        metadata={"model": "openai/whisper-large-v3", "audio_path": os.path.basename(audio_path)},
+        metadata={"model": "openai/gpt-audio", "audio_path": os.path.basename(audio_path)},
         tags=["llm", "interview", "transcription"],
     )
 
@@ -121,7 +121,7 @@ async def transcribe_audio_openrouter(audio_path: str) -> Dict[str, Any]:
     }
 
     payload = {
-        "model": "openai/whisper-large-v3",
+        "model": "openai/gpt-audio",
         "messages": [
             {
                 "role": "user",
@@ -161,7 +161,7 @@ async def transcribe_audio_openrouter(audio_path: str) -> Dict[str, Any]:
         end_trace(trace_id, output={
             "response_length": len(text),
             "latency_ms": round(latency_ms, 1),
-            "model": "openai/whisper-large-v3",
+            "model": "openai/gpt-audio",
         }, status="success")
 
         return {
