@@ -300,11 +300,17 @@ Provide your evaluation as JSON following the exact format specified."""
         )
 
     # Build typed evaluation
+    # Use the REAL transcript Q&A pairs — never trust the LLM's hallucinated answers
+    llm_qa_evals = eval_data.get("qa_evaluations", [])
     qa_evals = []
-    for qa in eval_data.get("qa_evaluations", []):
+    for i, qa in enumerate(llm_qa_evals):
+        # Always prefer the actual transcript text over what the LLM echoed back
+        real_question = qa_pairs[i]["question"] if i < len(qa_pairs) else qa.get("question", "")
+        real_answer = qa_pairs[i]["answer"] if i < len(qa_pairs) else qa.get("candidate_answer", "")
+
         qa_evals.append(QAEvaluation(
-            question=qa.get("question", ""),
-            candidate_answer=qa.get("candidate_answer", ""),
+            question=real_question,
+            candidate_answer=real_answer,
             quality_score=min(10, max(0, int(qa.get("quality_score", 0)))),
             ideal_answer_summary=qa.get("ideal_answer_summary", ""),
             feedback=qa.get("feedback", ""),

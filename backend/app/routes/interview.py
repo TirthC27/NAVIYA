@@ -81,25 +81,35 @@ def _convert_webm_to_wav(input_path: str, output_path: str) -> bool:
 
 def _text_to_segments(text: str) -> List[Dict]:
     """
-    Convert plain text transcript to segments.
-    Splits by sentences, creates segment objects with IDs.
+    Convert transcript text to segments.
+    First tries to detect INTERVIEWER:/CANDIDATE: labels.
+    Falls back to sentence splitting if no labels found.
     """
     if not text or not text.strip():
         return []
-    
+
+    # First, try parsing as labeled transcript (INTERVIEWER: / CANDIDATE:)
+    labeled = _parse_labeled_transcript(text)
+    if labeled and len(labeled) > 1:
+        return labeled
+
     import re
-    # Split by sentence boundaries (. ! ?) followed by space or newline
-    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
-    
+    # Fallback: split by newlines first, then by sentences
+    lines = [l.strip() for l in text.strip().split("\n") if l.strip()]
+
+    # If only one line, split by sentences
+    if len(lines) <= 1:
+        lines = re.split(r'(?<=[.!?])\s+', text.strip())
+
     segments = []
-    for i, sentence in enumerate(sentences):
-        sentence = sentence.strip()
-        if sentence:
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if line:
             segments.append({
                 "id": i,
-                "text": sentence,
+                "text": line,
             })
-    
+
     return segments
 
 
@@ -151,12 +161,22 @@ async def transcribe_audio_openrouter(audio_path: str) -> Dict[str, Any]:
                 "role": "user",
                 "content": [
                     {
+                        "type": "text",
+                        "text": (
+                            "Transcribe the following audio recording of a mock interview. "
+                            "Label each speaker as either INTERVIEWER or CANDIDATE. "
+                            "The first speaker is the INTERVIEWER. "
+                            "Format each line as:\nINTERVIEWER: ...\nCANDIDATE: ...\n"
+                            "Transcribe EVERYTHING spoken. Do not summarize."
+                        ),
+                    },
+                    {
                         "type": "input_audio",
                         "input_audio": {
                             "data": audio_b64,
                             "format": audio_format,
                         },
-                    }
+                    },
                 ],
             }
         ],
@@ -182,15 +202,32 @@ async def transcribe_audio_openrouter(audio_path: str) -> Dict[str, Any]:
         data = response.json()
         text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
 
+        # Parse into labeled segments
+        segments = _text_to_segments(text)
+
+        # If we got unlabeled segments (no speaker key), try to re-label via Gemini
+        has_labels = any(s.get("speaker") for s in segments)
+        if not has_labels and len(segments) > 0:
+            print("[Transcribe] Primary model returned unlabeled text, attempting re-label...")
+            # Fall back to Gemini for proper speaker labeling
+            end_trace(trace_id, output={
+                "response_length": len(text),
+                "latency_ms": round(latency_ms, 1),
+                "model": "openai/gpt-audio",
+                "fallback": "gemini-relabel",
+            }, status="success")
+            return await _transcribe_via_gemini(audio_b64, audio_format, headers)
+
         end_trace(trace_id, output={
             "response_length": len(text),
             "latency_ms": round(latency_ms, 1),
             "model": "openai/gpt-audio",
+            "segments_count": len(segments),
         }, status="success")
 
         return {
             "text": text,
-            "segments": _text_to_segments(text),
+            "segments": segments,
         }
 
 
