@@ -1,7 +1,7 @@
 import httpx
 import json
 
-BASE = "http://localhost:8000"
+BASE = "https://naviyabackend-je3hanh5.b4a.run"
 USER_ID = "cded6979-e0c1-41c5-8064-0527612d2544"
 
 print("=" * 60)

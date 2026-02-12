@@ -2,8 +2,8 @@
  * Centralized API configuration
  *
  * VITE_API_BASE_URL MUST be set:
- * - Local dev:  .env → http://localhost:8000
- * - Production: Vercel env vars → https://<your-backend>.onrender.com
+ * - Production: https://naviyabackend-je3hanh5.b4a.run (Back4App)
+ * - Local dev:  Override in .env if testing locally
  */
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;

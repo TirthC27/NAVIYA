@@ -7,7 +7,7 @@ import requests
 import os
 
 # Test configuration
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://naviyabackend-je3hanh5.b4a.run"
 TEST_USER_ID = "test-user-123"
 
 def test_upload():
@@ -63,6 +63,6 @@ if __name__ == "__main__":
         test_upload()
     except requests.exceptions.ConnectionError:
         print("❌ Error: Cannot connect to backend server")
-        print("Make sure the server is running on http://localhost:8000")
+        print("Make sure the server is running on https://naviyabackend-je3hanh5.b4a.run")
     except Exception as e:
         print(f"❌ Error: {e}")
