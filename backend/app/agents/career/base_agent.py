@@ -29,7 +29,8 @@ class BaseAgent(ABC):
     agent_description: str = "Base agent class"
     
     def __init__(self):
-        # Lazy initialization - don't create Supabase client until needed
+        # Lazy initialization - Supabase client created on first access
+        # to prevent import-time crashes on Cloud Run
         self._supabase = None
     
     @property
@@ -37,10 +38,6 @@ class BaseAgent(ABC):
         """Lazy-load Supabase client on first access"""
         if self._supabase is None:
             self._supabase = get_supabase_client()
-            if self._supabase is None:
-                raise ValueError(
-                    "Supabase is not configured. Set SUPABASE_URL and SUPABASE_KEY environment variables."
-                )
         return self._supabase
     
     @abstractmethod

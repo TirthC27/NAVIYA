@@ -5,7 +5,7 @@ FastAPI routes for the Career Intelligence module.
 All routes interact with the career agents.
 """
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 import json
@@ -21,34 +21,13 @@ from app.agents.career import (
 
 router = APIRouter(prefix="/career", tags=["career"])
 
-
-# ============== Dependency Injection (Lazy Agent Initialization) ==============
-# Agents are created on-demand per request instead of at import time
-# This prevents Cloud Run startup crashes from missing env vars
-
-def get_supervisor():
-    """Factory function for SupervisorAgent"""
-    return SupervisorAgent()
-
-def get_roadmap_agent():
-    """Factory function for RoadmapAgent"""
-    return RoadmapAgent()
-
-def get_skill_extractor():
-    """Factory function for SkillExtractorAgent"""
-    return SkillExtractorAgent()
-
-def get_assessment_agent():
-    """Factory function for AssessmentAgent"""
-    return AssessmentAgent()
-
-def get_interview_agent():
-    """Factory function for InterviewAgent"""
-    return InterviewAgent()
-
-def get_mentor_agent():
-    """Factory function for MentorAgent"""
-    return MentorAgent()
+# Initialize agents
+supervisor = SupervisorAgent()
+roadmap_agent = RoadmapAgent()
+skill_extractor = SkillExtractorAgent()
+assessment_agent = AssessmentAgent()
+interview_agent = InterviewAgent()
+mentor_agent = MentorAgent()
 
 
 # ============== Pydantic Models ==============
@@ -104,7 +83,7 @@ class MentorMessage(BaseModel):
 # ============== Dashboard Routes ==============
 
 @router.get("/dashboard/{user_id}")
-async def get_dashboard(user_id: str, supervisor: SupervisorAgent = Depends(get_supervisor)):
+async def get_dashboard(user_id: str):
     """Get comprehensive dashboard data for the user."""
     try:
         data = await supervisor.get_dashboard_data(user_id)
@@ -114,7 +93,7 @@ async def get_dashboard(user_id: str, supervisor: SupervisorAgent = Depends(get_
 
 
 @router.get("/next-action/{user_id}")
-async def get_next_action(user_id: str, supervisor: SupervisorAgent = Depends(get_supervisor)):
+async def get_next_action(user_id: str):
     """Get the next recommended action for the user."""
     try:
         action = await supervisor.get_next_best_action(user_id)
@@ -148,7 +127,7 @@ async def create_profile(user_id: str, profile: CareerProfileCreate):
 
 
 @router.get("/profile/{user_id}")
-async def get_profile(user_id: str, supervisor: SupervisorAgent = Depends(get_supervisor)):
+async def get_profile(user_id: str):
     """Get user's career profile."""
     profile = await supervisor.get_user_profile(user_id)
     if not profile:
@@ -159,7 +138,7 @@ async def get_profile(user_id: str, supervisor: SupervisorAgent = Depends(get_su
 # ============== Roadmap Routes ==============
 
 @router.post("/roadmap/generate/{user_id}")
-async def generate_roadmap(user_id: str, data: RoadmapGenerate, roadmap_agent: RoadmapAgent = Depends(get_roadmap_agent)):
+async def generate_roadmap(user_id: str, data: RoadmapGenerate):
     """Generate a new career roadmap."""
     try:
         roadmap = await roadmap_agent.execute(user_id, {
@@ -174,7 +153,7 @@ async def generate_roadmap(user_id: str, data: RoadmapGenerate, roadmap_agent: R
 
 
 @router.get("/roadmap/{user_id}")
-async def get_roadmap(user_id: str, roadmap_agent: RoadmapAgent = Depends(get_roadmap_agent)):
+async def get_roadmap(user_id: str):
     """Get user's current roadmap."""
     try:
         roadmap = await roadmap_agent.execute(user_id, {"action": "get_current"})
@@ -184,7 +163,7 @@ async def get_roadmap(user_id: str, roadmap_agent: RoadmapAgent = Depends(get_ro
 
 
 @router.put("/roadmap/progress/{user_id}")
-async def update_roadmap_progress(user_id: str, data: RoadmapProgressUpdate, roadmap_agent: RoadmapAgent = Depends(get_roadmap_agent)):
+async def update_roadmap_progress(user_id: str, data: RoadmapProgressUpdate):
     """Update progress on a roadmap phase."""
     try:
         result = await roadmap_agent.execute(user_id, {
@@ -204,8 +183,7 @@ async def update_roadmap_progress(user_id: str, data: RoadmapProgressUpdate, roa
 @router.post("/resume/upload/{user_id}")
 async def upload_resume(
     user_id: str,
-    file: UploadFile = File(...),
-    skill_extractor: SkillExtractorAgent = Depends(get_skill_extractor)
+    file: UploadFile = File(...)
 ):
     """Upload and analyze a resume."""
     try:
@@ -225,7 +203,7 @@ async def upload_resume(
 
 
 @router.post("/resume/analyze-text/{user_id}")
-async def analyze_resume_text(user_id: str, resume_text: str = Form(...), skill_extractor: SkillExtractorAgent = Depends(get_skill_extractor)):
+async def analyze_resume_text(user_id: str, resume_text: str = Form(...)):
     """Analyze resume from text input."""
     try:
         result = await skill_extractor.execute(user_id, {
@@ -238,14 +216,14 @@ async def analyze_resume_text(user_id: str, resume_text: str = Form(...), skill_
 
 
 @router.get("/skills/{user_id}")
-async def get_skills(user_id: str, supervisor: SupervisorAgent = Depends(get_supervisor)):
+async def get_skills(user_id: str):
     """Get user's skills."""
     skills = await supervisor.get_user_skills(user_id)
     return {"skills": skills}
 
 
 @router.post("/skills/gaps/{user_id}")
-async def analyze_skill_gaps(user_id: str, target_role: str = Form(...), skill_extractor: SkillExtractorAgent = Depends(get_skill_extractor)):
+async def analyze_skill_gaps(user_id: str, target_role: str = Form(...)):
     """Analyze skill gaps for a target role."""
     try:
         result = await skill_extractor.execute(user_id, {
@@ -258,7 +236,7 @@ async def analyze_skill_gaps(user_id: str, target_role: str = Form(...), skill_e
 
 
 @router.get("/skills/recommendations/{user_id}")
-async def get_role_recommendations(user_id: str, skill_extractor: SkillExtractorAgent = Depends(get_skill_extractor)):
+async def get_role_recommendations(user_id: str):
     """Get recommended roles based on skills."""
     try:
         result = await skill_extractor.execute(user_id, {
@@ -272,7 +250,7 @@ async def get_role_recommendations(user_id: str, skill_extractor: SkillExtractor
 # ============== Assessment Routes ==============
 
 @router.post("/assessment/start/{user_id}")
-async def start_assessment(user_id: str, data: AssessmentStart, assessment_agent: AssessmentAgent = Depends(get_assessment_agent)):
+async def start_assessment(user_id: str, data: AssessmentStart):
     """Start a new skill assessment."""
     try:
         result = await assessment_agent.execute(user_id, {
@@ -287,7 +265,7 @@ async def start_assessment(user_id: str, data: AssessmentStart, assessment_agent
 
 
 @router.post("/assessment/submit/{user_id}")
-async def submit_assessment(user_id: str, data: AssessmentSubmit, assessment_agent: AssessmentAgent = Depends(get_assessment_agent)):
+async def submit_assessment(user_id: str, data: AssessmentSubmit):
     """Submit assessment answers for evaluation."""
     try:
         result = await assessment_agent.execute(user_id, {
@@ -301,7 +279,7 @@ async def submit_assessment(user_id: str, data: AssessmentSubmit, assessment_age
 
 
 @router.get("/assessment/history/{user_id}")
-async def get_assessment_history(user_id: str, assessment_agent: AssessmentAgent = Depends(get_assessment_agent)):
+async def get_assessment_history(user_id: str):
     """Get user's assessment history."""
     try:
         result = await assessment_agent.execute(user_id, {
@@ -315,7 +293,7 @@ async def get_assessment_history(user_id: str, assessment_agent: AssessmentAgent
 # ============== Interview Routes ==============
 
 @router.post("/interview/start/{user_id}")
-async def start_interview(user_id: str, data: InterviewStart, interview_agent: InterviewAgent = Depends(get_interview_agent)):
+async def start_interview(user_id: str, data: InterviewStart):
     """Start a new mock interview."""
     try:
         result = await interview_agent.execute(user_id, {
@@ -330,7 +308,7 @@ async def start_interview(user_id: str, data: InterviewStart, interview_agent: I
 
 
 @router.post("/interview/answer/{user_id}")
-async def submit_interview_answer(user_id: str, data: InterviewAnswer, interview_agent: InterviewAgent = Depends(get_interview_agent)):
+async def submit_interview_answer(user_id: str, data: InterviewAnswer):
     """Submit an answer during the interview."""
     try:
         result = await interview_agent.execute(user_id, {
@@ -345,7 +323,7 @@ async def submit_interview_answer(user_id: str, data: InterviewAnswer, interview
 
 
 @router.post("/interview/complete/{user_id}")
-async def complete_interview(user_id: str, interview_id: str = Form(...), interview_agent: InterviewAgent = Depends(get_interview_agent)):
+async def complete_interview(user_id: str, interview_id: str = Form(...)):
     """Complete an interview and get final feedback."""
     try:
         result = await interview_agent.execute(user_id, {
@@ -358,7 +336,7 @@ async def complete_interview(user_id: str, interview_id: str = Form(...), interv
 
 
 @router.get("/interview/history/{user_id}")
-async def get_interview_history(user_id: str, interview_agent: InterviewAgent = Depends(get_interview_agent)):
+async def get_interview_history(user_id: str):
     """Get user's interview history."""
     try:
         result = await interview_agent.execute(user_id, {
@@ -372,7 +350,7 @@ async def get_interview_history(user_id: str, interview_agent: InterviewAgent = 
 # ============== Mentor Routes ==============
 
 @router.post("/mentor/chat/{user_id}")
-async def mentor_chat(user_id: str, data: MentorMessage, mentor_agent: MentorAgent = Depends(get_mentor_agent)):
+async def mentor_chat(user_id: str, data: MentorMessage):
     """Send a message to the AI mentor."""
     try:
         result = await mentor_agent.execute(user_id, {
@@ -386,7 +364,7 @@ async def mentor_chat(user_id: str, data: MentorMessage, mentor_agent: MentorAge
 
 
 @router.post("/mentor/session/{user_id}")
-async def start_mentor_session(user_id: str, mentor_agent: MentorAgent = Depends(get_mentor_agent)):
+async def start_mentor_session(user_id: str):
     """Start a new mentor session."""
     try:
         result = await mentor_agent.execute(user_id, {
@@ -398,7 +376,7 @@ async def start_mentor_session(user_id: str, mentor_agent: MentorAgent = Depends
 
 
 @router.get("/mentor/suggestion/{user_id}")
-async def get_mentor_suggestion(user_id: str, mentor_agent: MentorAgent = Depends(get_mentor_agent)):
+async def get_mentor_suggestion(user_id: str):
     """Get the mentor's next suggestion."""
     try:
         result = await mentor_agent.execute(user_id, {
@@ -410,7 +388,7 @@ async def get_mentor_suggestion(user_id: str, mentor_agent: MentorAgent = Depend
 
 
 @router.get("/mentor/sessions/{user_id}")
-async def get_mentor_sessions(user_id: str, mentor_agent: MentorAgent = Depends(get_mentor_agent)):
+async def get_mentor_sessions(user_id: str):
     """Get user's mentor session history."""
     try:
         result = await mentor_agent.execute(user_id, {

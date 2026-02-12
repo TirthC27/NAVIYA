@@ -4,7 +4,7 @@ Thin routing layer that delegates to the SkillRoadmapAgent.
 """
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import sys
 from pathlib import Path
@@ -18,14 +18,9 @@ from skill_roadmap_agent import SkillRoadmapAgent, AgentConfig
 
 router = APIRouter(prefix="/api/skill-roadmap", tags=["Skill Roadmap"])
 
-
-# ============================================
-# Dependency Injection (Cloud Run Compatible)
-# ============================================
-def get_skill_roadmap_agent():
-    """Factory function for SkillRoadmapAgent - creates instance on demand"""
-    agent_config = AgentConfig.from_env()
-    return SkillRoadmapAgent(agent_config)
+# Initialize agent
+agent_config = AgentConfig.from_env()
+agent = SkillRoadmapAgent(agent_config)
 
 
 # ============================================
@@ -62,7 +57,7 @@ class VideoProgressRequest(BaseModel):
 
 
 @router.post("/generate")
-async def generate_skill_roadmap(req: GenerateRoadmapRequest, agent: SkillRoadmapAgent = Depends(get_skill_roadmap_agent)):
+async def generate_skill_roadmap(req: GenerateRoadmapRequest):
     """
     Generate a skill-gap roadmap using the SkillRoadmapAgent.
     """
@@ -79,7 +74,7 @@ async def generate_skill_roadmap(req: GenerateRoadmapRequest, agent: SkillRoadma
 
 
 @router.get("/saved/{user_id}")
-async def get_saved_roadmap(user_id: str, agent: SkillRoadmapAgent = Depends(get_skill_roadmap_agent)):
+async def get_saved_roadmap(user_id: str):
     """Get the most recent saved roadmap for a user"""
     history = await agent.get_roadmap_history(user_id, limit=1)
     if not history:
@@ -96,14 +91,14 @@ async def get_saved_roadmap(user_id: str, agent: SkillRoadmapAgent = Depends(get
 
 
 @router.get("/history/{user_id}")
-async def get_roadmap_history(user_id: str, agent: SkillRoadmapAgent = Depends(get_skill_roadmap_agent)):
+async def get_roadmap_history(user_id: str):
     """Get all saved roadmaps for a user"""
     history = await agent.get_roadmap_history(user_id, limit=20)
     return {"success": True, "history": history}
 
 
 @router.get("/load/{roadmap_id}")
-async def load_roadmap_by_id(roadmap_id: str, agent: SkillRoadmapAgent = Depends(get_skill_roadmap_agent)):
+async def load_roadmap_by_id(roadmap_id: str):
     """Load a specific roadmap by ID"""
     roadmap = await agent.load_roadmap_by_id(roadmap_id)
     if not roadmap:
@@ -116,7 +111,7 @@ async def load_roadmap_by_id(roadmap_id: str, agent: SkillRoadmapAgent = Depends
 
 
 @router.post("/videos")
-async def get_skill_videos(req: VideoSearchRequest, agent: SkillRoadmapAgent = Depends(get_skill_roadmap_agent)):
+async def get_skill_videos(req: VideoSearchRequest):
     """
     Fetch YouTube tutorial videos for a specific skill.
     """
@@ -139,7 +134,7 @@ async def get_skill_videos(req: VideoSearchRequest, agent: SkillRoadmapAgent = D
 # ============================================
 
 @router.post("/video-progress")
-async def save_video_progress(req: VideoProgressRequest, agent: SkillRoadmapAgent = Depends(get_skill_roadmap_agent)):
+async def save_video_progress(req: VideoProgressRequest):
     """
     Save or update video watch progress.
     Auto-marks completed when watched >= 80% of duration.
@@ -209,7 +204,7 @@ async def save_video_progress(req: VideoProgressRequest, agent: SkillRoadmapAgen
 
 
 @router.get("/video-progress/{user_id}/{roadmap_id}")
-async def get_video_progress(user_id: str, roadmap_id: str, agent: SkillRoadmapAgent = Depends(get_skill_roadmap_agent)):
+async def get_video_progress(user_id: str, roadmap_id: str):
     """
     Get all video watch progress for a user's roadmap.
     Returns a dict keyed by node_id for easy lookup.
