@@ -184,12 +184,25 @@ app.include_router(opik_dashboard_router)  # Already has /api/opik prefix
 # ============================================
 @app.on_event("startup")
 async def startup_event():
-    """Initialize OPIK on startup"""
+    """Initialize services on startup"""
+    import os
+    port = os.getenv("PORT", "8000")
+    
+    print("=" * 60)
+    print(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION}")
+    print(f"🌐 Server starting on 0.0.0.0:{port}")
+    print(f"📋 Docs available at http://localhost:{port}/docs")
+    print("=" * 60)
+    
+    # Initialize OPIK (non-blocking)
     try:
         init_opik(project_name="Naviya")
-        print("[OK] OPIK initialized successfully")
+        print("[✓] OPIK initialized successfully")
     except Exception as e:
-        print(f"[WARN] OPIK running in mock mode: {e}")
+        print(f"[⚠] OPIK running in mock mode: {e}")
+    
+    print(f"[✓] Server ready to accept connections on PORT {port}")
+    print("=" * 60)
 
 
 # ============================================

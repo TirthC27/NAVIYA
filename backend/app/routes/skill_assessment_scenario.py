@@ -6,7 +6,7 @@ Thin routing layer → delegates to SkillAssessmentAgent
 import sys
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 # Add Agents directory to path
@@ -19,10 +19,16 @@ from skill_assessment_agent import SkillAssessmentAgent
 
 router = APIRouter(prefix="/api/skill-assessment", tags=["Skill Assessment (Scenarios)"])
 
-agent = SkillAssessmentAgent(
-    supabase_url=settings.SUPABASE_URL,
-    supabase_key=settings.SUPABASE_KEY,
-)
+
+# ============================================
+# Dependency Injection (Cloud Run Compatible)
+# ============================================
+def get_skill_assessment_agent():
+    """Factory function for SkillAssessmentAgent - creates instance on demand"""
+    return SkillAssessmentAgent(
+        supabase_url=settings.SUPABASE_URL,
+        supabase_key=settings.SUPABASE_KEY,
+    )
 
 
 # ── Request Models ──────────────────────────────────────
@@ -56,7 +62,7 @@ class ExplainRequest(BaseModel):
 # ── Endpoints ───────────────────────────────────────────
 
 @router.get("/domains")
-async def get_domains():
+async def get_domains(agent: SkillAssessmentAgent = Depends(get_skill_assessment_agent)):
     """Get available domains and their skills."""
     domains = []
     for key, label in agent.DOMAINS.items():
@@ -66,7 +72,7 @@ async def get_domains():
 
 
 @router.post("/start")
-async def start_assessment(req: StartRequest):
+async def start_assessment(req: StartRequest, agent: SkillAssessmentAgent = Depends(get_skill_assessment_agent)):
     """
     STEP 1-3: Load rules + Generate scenario.
     Returns the scenario for the user to play.
@@ -95,7 +101,7 @@ async def start_assessment(req: StartRequest):
 
 
 @router.post("/score")
-async def score_assessment(req: SubmitActionsRequest):
+async def score_assessment(req: SubmitActionsRequest, agent: SkillAssessmentAgent = Depends(get_skill_assessment_agent)):
     """
     STEP 5: Auto-score user actions. Pure logic, no LLM.
     """
@@ -113,7 +119,7 @@ async def score_assessment(req: SubmitActionsRequest):
 
 
 @router.post("/explain")
-async def explain_and_finalize(req: ExplainRequest):
+async def explain_and_finalize(req: ExplainRequest, agent: SkillAssessmentAgent = Depends(get_skill_assessment_agent)):
     """
     STEP 6-7: Evaluate explanation + save final result.
     """
@@ -169,7 +175,7 @@ async def explain_and_finalize(req: ExplainRequest):
 
 
 @router.get("/history/{user_id}")
-async def get_assessment_history(user_id: str):
+async def get_assessment_history(user_id: str, agent: SkillAssessmentAgent = Depends(get_skill_assessment_agent)):
     """Get assessment history for a user."""
     history = await agent.get_history(user_id)
     return {"success": True, "history": history}

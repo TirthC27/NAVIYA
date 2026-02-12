@@ -21,13 +21,27 @@ class BaseAgent(ABC):
     
     Agents are stateless - Supabase is the memory store.
     Every action is logged to agent_activity_log.
+    
+    Note: Supabase client is initialized lazily to avoid import-time crashes.
     """
     
     agent_name: str = "BaseAgent"
     agent_description: str = "Base agent class"
     
     def __init__(self):
-        self.supabase = get_supabase_client()
+        # Lazy initialization - don't create Supabase client until needed
+        self._supabase = None
+    
+    @property
+    def supabase(self):
+        """Lazy-load Supabase client on first access"""
+        if self._supabase is None:
+            self._supabase = get_supabase_client()
+            if self._supabase is None:
+                raise ValueError(
+                    "Supabase is not configured. Set SUPABASE_URL and SUPABASE_KEY environment variables."
+                )
+        return self._supabase
     
     @abstractmethod
     async def execute(self, user_id: str, context: Dict[str, Any]) -> Dict[str, Any]:
