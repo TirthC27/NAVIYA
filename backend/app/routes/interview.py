@@ -51,6 +51,7 @@ def _get_supabase_headers():
 def _convert_webm_to_wav(input_path: str, output_path: str) -> bool:
     """Convert webm/ogg audio to 16kHz mono WAV via ffmpeg"""
     try:
+        print(f"[FFmpeg] 🔄 Converting {os.path.basename(input_path)} to WAV...")
         result = subprocess.run(
             [
                 "ffmpeg", "-y",
@@ -64,14 +65,19 @@ def _convert_webm_to_wav(input_path: str, output_path: str) -> bool:
             timeout=30,
         )
         if result.returncode != 0:
-            print(f"[FFmpeg] stderr: {result.stderr.decode(errors='ignore')}")
+            print(f"[FFmpeg] ❌ Conversion failed (exit code {result.returncode})")
+            print(f"[FFmpeg] stderr: {result.stderr.decode(errors='ignore')[:200]}")
             return False
+        
+        output_size_kb = os.path.getsize(output_path) / 1024
+        print(f"[FFmpeg] ✅ Converted successfully → {output_size_kb:.0f} KB WAV")
         return True
     except FileNotFoundError:
-        print("[FFmpeg] ffmpeg not found — returning raw file")
+        print("[FFmpeg] ⚠️  ffmpeg not found in PATH — returning raw file")
+        print("[FFmpeg] 💡 Install ffmpeg: apt-get install ffmpeg (or rebuild Docker)")
         return False
     except Exception as e:
-        print(f"[FFmpeg] conversion error: {e}")
+        print(f"[FFmpeg] ❌ Conversion error: {e}")
         return False
 
 
@@ -530,22 +536,41 @@ async def full_interview_session(
 
     # Step 2: Evaluate
     session_id = str(uuid.uuid4())
+    print(f"[Interview] 🔄 Starting evaluation for session {session_id}...")
+    
     evaluation = await evaluate_interview(
         user_id=user_id,
         transcript_segments=[s if isinstance(s, dict) else s.dict() for s in transcription.segments],
         session_id=session_id,
     )
+    
+    print(f"[Interview] ✅ Evaluation complete:")
+    print(f"  - Overall Score: {evaluation.overall_score}")
+    print(f"  - Rating: {evaluation.overall_rating}")
+    print(f"  - Questions Evaluated: {evaluation.questions_evaluated}")
+    print(f"  - Communication Score: {evaluation.communication_score}")
+    print(f"  - Technical Score: {evaluation.technical_score}")
 
     # Step 3: Save
+    print(f"[Interview] 💾 Saving session to database...")
+    eval_dict = evaluation.dict()
+    print(f"[Interview] Evaluation dict keys: {list(eval_dict.keys())}")
+    
     try:
-        await _save_interview_session(
+        save_result = await _save_interview_session(
             user_id=user_id,
             session_id=session_id,
             transcript_segments=transcription.segments,
-            evaluation=evaluation.dict(),
+            evaluation=eval_dict,
         )
+        if save_result:
+            print(f"[Interview] ✅ Session saved successfully to DB")
+        else:
+            print(f"[Interview] ⚠️ Session save returned False - verify DB state")
     except Exception as e:
-        print(f"[Interview] Failed to save session: {e}")
+        print(f"[Interview] ❌ CRITICAL: Failed to save session: {e}")
+        import traceback
+        traceback.print_exc()
 
     # Step 4: Update dashboard state
     try:
@@ -554,13 +579,20 @@ async def full_interview_session(
     except Exception as e:
         print(f"[Interview] Failed to update dashboard: {e}")
 
-    return InterviewSessionResponse(
+    final_response = InterviewSessionResponse(
         success=True,
         session_id=session_id,
         transcript=transcription.text,
         segments=transcription.segments if isinstance(transcription.segments, list) else [],
-        evaluation=evaluation.dict(),
+        evaluation=eval_dict,
     )
+    
+    print(f"[Interview] 📤 Returning response with evaluation:")
+    print(f"  - Session ID: {session_id}")
+    print(f"  - Evaluation included: {bool(final_response.evaluation)}")
+    print(f"  - Evaluation overall_score: {final_response.evaluation.get('overall_score', 'MISSING')}")
+    
+    return final_response
 
 
 @router.get("/sessions/{user_id}")
@@ -586,8 +618,8 @@ async def _save_interview_session(
     session_id: str,
     transcript_segments: Any,
     evaluation: Dict,
-):
-    """Save interview session to Supabase"""
+) -> bool:
+    """Save interview session to Supabase. Returns True if successful."""
     # Convert segments to serializable format
     segments_data = []
     for seg in transcript_segments:
@@ -605,16 +637,44 @@ async def _save_interview_session(
         "overall_rating": evaluation.get("overall_rating", ""),
         "created_at": datetime.utcnow().isoformat(),
     }
+    
+    print(f"[Interview] 🔧 Preparing DB save with data:")
+    print(f"  - session_id: {session_id}")
+    print(f"  - user_id: {user_id}")
+    print(f"  - segments: {len(segments_data)}")
+    print(f"  - evaluation overall_score: {data['overall_score']}")
+    print(f"  - evaluation keys: {list(evaluation.keys()) if evaluation else 'NONE'}")
 
     async with httpx.AsyncClient(timeout=15.0) as client:
+        print(f"[Interview] 📡 POSTing to Supabase: {SUPABASE_REST_URL}/interview_sessions")
         response = await client.post(
             f"{SUPABASE_REST_URL}/interview_sessions",
             headers=_get_supabase_headers(),
             json=data,
         )
+        
+        print(f"[Interview] 📥 DB Response: {response.status_code}")
+        
         if response.status_code not in (200, 201):
-            print(f"[Interview] Supabase save error: {response.status_code} - {response.text}")
+            error_text = response.text[:500]
+            print(f"[Interview] ❌ Supabase save FAILED: {response.status_code}")
+            print(f"[Interview] Error body: {error_text}")
             # Table may not exist yet — that's okay, don't fail the request
+            return False
+        
+        # Verify the saved data
+        try:
+            saved_data = response.json()
+            if isinstance(saved_data, list) and saved_data:
+                saved_data = saved_data[0]
+            print(f"[Interview] ✅ Verified saved to DB:")
+            print(f"  - ID: {saved_data.get('id', 'MISSING')}")
+            print(f"  - Score in DB: {saved_data.get('overall_score', 'MISSING')}")
+            print(f"  - Rating in DB: {saved_data.get('overall_rating', 'MISSING')}")
+            return True
+        except Exception as parse_err:
+            print(f"[Interview] ⚠️ Could not parse save response: {parse_err}")
+            return True  # Assume success if we got 200/201
 
 
 # ============================================
