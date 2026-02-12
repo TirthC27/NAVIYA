@@ -23,7 +23,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import useActivityTracker from '../../hooks/useActivityTracker';
-import { API_BASE_URL as API_BASE } from '../../api/config';
+import { API_BASE_URL, apiFetch } from '../../api/config';
 
 // Slide icons by index
 const SLIDE_ICONS = [BookOpen, Lightbulb, Target, AlertTriangle, Rocket];
@@ -83,9 +83,8 @@ const TopicExplainer = () => {
     }, 800);
 
     try {
-      const res = await fetch(`${API_BASE}/api/topic-explainer/generate`, {
+      const res = await apiFetch('/api/topic-explainer/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic: t }),
       });
 
@@ -460,7 +459,7 @@ const TopicExplainer = () => {
                   {slide.has_image && slide.image_url && (
                     <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-lg">
                       <img
-                        src={`${API_BASE}${slide.image_url}`}
+                        src={`${API_BASE_URL}${slide.image_url}`}
                         alt={slide.title}
                         className="w-full object-contain bg-white dark:bg-[#0e0e0e]"
                         style={{ maxHeight: '420px' }}
