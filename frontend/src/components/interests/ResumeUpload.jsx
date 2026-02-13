@@ -90,21 +90,6 @@ export default function ResumeUpload({ userId, onUploadComplete }) {
     setFile(selectedFile);
   };
   
-  const extractTextFromFile = async (file) => {
-    // For TXT files, read directly
-    if (file.type === 'text/plain') {
-      return await file.text();
-    }
-    
-    // For other files, we would need a backend service or library
-    // For now, return a placeholder indicating PDF/DOC processing needed
-    // In production, this would use pdf.js, mammoth.js, or a backend service
-    
-    // Simulate text extraction for demo
-    // In real implementation, send file to backend for processing
-    return `[Resume content from ${file.name}]\n\nNote: Full PDF/DOC text extraction requires backend processing.`;
-  };
-  
   const handleUpload = async () => {
     if (!file || !userId) return;
     
@@ -112,20 +97,14 @@ export default function ResumeUpload({ userId, onUploadComplete }) {
     setError(null);
     
     try {
-      // Extract text from file
-      const resumeText = await extractTextFromFile(file);
-      
-      if (!resumeText || resumeText.length < 50) {
-        throw new Error('Could not extract enough text from the file.');
-      }
-      
-      // Create form data
+      // Create form data with file binary and user_id
+      // Backend handles text extraction via resume-simple endpoint
       const formData = new FormData();
-      formData.append('resume_text', resumeText);
-      formData.append('filename', file.name);
+      formData.append('file', file);
+      formData.append('user_id', userId);
       
-      // Send to API
-      const response = await fetch(`${API_BASE_URL}/api/resume/upload/${userId}`, {
+      // Send to correct API endpoint (same as ResumeAnalysis.jsx and ProfileSidebar.jsx)
+      const response = await fetch(`${API_BASE_URL}/api/resume-simple/upload`, {
         method: 'POST',
         body: formData
       });
