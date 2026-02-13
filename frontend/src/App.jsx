@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 
 // Theme
 import { ThemeProvider } from './context/ThemeContext';
@@ -121,6 +122,7 @@ function App() {
         {/* Catch all - redirect to welcome */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Analytics />
     </Router>
     </OnboardingProvider>
     </OpikToastProvider>
