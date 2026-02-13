@@ -56,10 +56,10 @@ class Settings:
 
         # CORS – comma-separated list of allowed frontend origins.
         # ⚠️  Origins are scheme://host[:port] ONLY — never include paths!
-        # Example: "https://naviya-dun.vercel.app,http://localhost:5173"
+        # Example: "VITE_API_BASE_URL=https://naviya-750648121075.asia-south1.run.app,http://localhost:5173"
         _cors_raw = _read_env_key(
             "CORS_ORIGINS",
-            "https://naviya-dun.vercel.app,http://localhost:5173,http://localhost:3000"
+            "VITE_API_BASE_URL=https://naviya-750648121075.asia-south1.run.app,http://localhost:5173,http://localhost:3000"
         )
         self.CORS_ORIGINS: list = [o.strip().rstrip("/") for o in _cors_raw.split(",") if o.strip()]
 
