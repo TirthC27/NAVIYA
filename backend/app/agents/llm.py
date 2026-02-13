@@ -61,7 +61,7 @@ async def call_gemini(prompt: str, system_prompt: Optional[str] = None) -> str:
     headers = {
         "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "VITE_API_BASE_URL=https://naviya-750648121075.asia-south1.run.app",
+        "HTTP-Referer": "https://naviya-dun.vercel.app",
         "X-Title": "NAVIYA",
     }
     
@@ -208,7 +208,7 @@ def call_gemini_sync(prompt: str, system_prompt: Optional[str] = None) -> str:
     headers = {
         "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "VITE_API_BASE_URL=https://naviya-750648121075.asia-south1.run.app",
+        "HTTP-Referer": "https://naviya-dun.vercel.app",
         "X-Title": "NAVIYA",
     }
     

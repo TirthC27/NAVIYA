@@ -97,7 +97,7 @@ async def _openrouter_chat(
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",  # Must be "Bearer <key>"
         "Content-Type": "application/json",
-        "HTTP-Referer": "VITE_API_BASE_URL=https://naviya-750648121075.asia-south1.run.app",   # Required by OpenRouter for identity
+        "HTTP-Referer": "https://naviya-dun.vercel.app",   # Required by OpenRouter for identity
         "X-Title": "NAVIYA",                               # Required by OpenRouter for identity
     }
     body: Dict[str, Any] = {
@@ -296,7 +296,7 @@ async def generate_slide_image(topic: str, slide: Dict) -> Optional[bytes]:
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "VITE_API_BASE_URL=https://naviya-750648121075.asia-south1.run.app",
+        "HTTP-Referer": "https://naviya-dun.vercel.app",
         "X-Title": "NAVIYA",
     }
     body = {
