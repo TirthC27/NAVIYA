@@ -140,6 +140,7 @@ class OpikMetricsMiddleware:
 
 
 # Configure CORS for frontend communication
+print(f"[CORS] Allowed origins: {settings.CORS_ORIGINS}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,  # Set via CORS_ORIGINS env var

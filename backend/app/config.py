@@ -59,9 +59,12 @@ class Settings:
         # Example: "https://naviya-dun.vercel.app,http://localhost:5173"
         _cors_raw = _read_env_key(
             "CORS_ORIGINS",
-            "https://naviya-dun.vercel.app,http://localhost:5173,http://localhost:3000"
+            "https://naviya-dun.vercel.app,https://naviya.vercel.app,http://localhost:5173,http://localhost:3000,http://localhost:8080"
         )
-        self.CORS_ORIGINS: list = [o.strip().rstrip("/") for o in _cors_raw.split(",") if o.strip()]
+        # Always include the production frontend URL
+        default_origins = ["https://naviya-dun.vercel.app", "https://naviya.vercel.app"]
+        user_origins = [o.strip().rstrip("/") for o in _cors_raw.split(",") if o.strip()]
+        self.CORS_ORIGINS: list = list(set(default_origins + user_origins))
 
 
 # Create a global settings instance
