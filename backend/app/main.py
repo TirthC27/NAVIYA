@@ -141,17 +141,111 @@ class OpikMetricsMiddleware:
 
 # Configure CORS for frontend communication
 print(f"[CORS] Allowed origins: {settings.CORS_ORIGINS}")
+
+# ── Safety-net CORS middleware ──────────────────────
+# Added as the OUTERMOST layer so that even infrastructure-level errors
+# (timeouts, body-too-large, unhandled exceptions that skip Starlette's
+# CORSMiddleware) still carry the required Access-Control-* headers.
+_ALLOWED_ORIGINS_SET = set(settings.CORS_ORIGINS)
+
+
+class CORSSafetyNetMiddleware:
+    """Guarantees CORS response headers are present for allowed origins."""
+
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # Extract Origin header from the incoming request
+        request_origin: str | None = None
+        for hdr_name, hdr_value in scope.get("headers", []):
+            if hdr_name == b"origin":
+                request_origin = hdr_value.decode("latin-1")
+                break
+
+        # Fast path: no Origin → nothing to do
+        if not request_origin or request_origin not in _ALLOWED_ORIGINS_SET:
+            await self.app(scope, receive, send)
+            return
+
+        # Handle preflight (OPTIONS) locally if inner middleware misses it
+        method = scope.get("method", "")
+        if method == "OPTIONS":
+            preflight_headers = [
+                (b"access-control-allow-origin", request_origin.encode()),
+                (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, PATCH, OPTIONS"),
+                (b"access-control-allow-headers", b"*"),
+                (b"access-control-allow-credentials", b"true"),
+                (b"access-control-max-age", b"600"),
+            ]
+            # Let inner middleware try first; if it sends a response, patch it.
+            response_started = False
+
+            async def send_preflight(message):
+                nonlocal response_started
+                if message["type"] == "http.response.start":
+                    response_started = True
+                    headers = list(message.get("headers", []))
+                    has_acao = any(h[0] == b"access-control-allow-origin" for h in headers)
+                    if not has_acao:
+                        headers.extend(preflight_headers)
+                        message["headers"] = headers
+                await send(message)
+
+            try:
+                await self.app(scope, receive, send_preflight)
+            except Exception:
+                if not response_started:
+                    await send({"type": "http.response.start", "status": 204, "headers": preflight_headers})
+                    await send({"type": "http.response.body", "body": b""})
+            return
+
+        # Normal request: ensure CORS headers on the response
+        async def send_with_cors(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                has_acao = any(h[0] == b"access-control-allow-origin" for h in headers)
+                if not has_acao:
+                    headers.append((b"access-control-allow-origin", request_origin.encode()))
+                    headers.append((b"access-control-allow-credentials", b"true"))
+                    expose = ", ".join(OPIK_HEADERS).encode()
+                    headers.append((b"access-control-expose-headers", expose))
+                    message["headers"] = headers
+            await send(message)
+
+        try:
+            await self.app(scope, receive, send_with_cors)
+        except Exception:
+            # If the inner stack exploded without sending a response,
+            # send a 502 **with** CORS headers so the browser can read the error.
+            error_headers = [
+                (b"access-control-allow-origin", request_origin.encode()),
+                (b"access-control-allow-credentials", b"true"),
+                (b"content-type", b"application/json"),
+            ]
+            await send({"type": "http.response.start", "status": 502, "headers": error_headers})
+            await send({"type": "http.response.body", "body": b'{"detail":"Internal server error"}'})
+
+
+# 1) Opik metrics middleware (innermost custom middleware)
+app.add_middleware(OpikMetricsMiddleware)
+
+# 2) Starlette CORS middleware (handles the standard CORS logic)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,  # Set via CORS_ORIGINS env var
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=OPIK_HEADERS,
 )
 
-# Add Opik metrics middleware (must be added AFTER CORS middleware)
-app.add_middleware(OpikMetricsMiddleware)
+# 3) CORS safety-net (outermost – guarantees headers even on crashes)
+app.add_middleware(CORSSafetyNetMiddleware)
 
 # Initialize safety guard
 safety_guard = SafetyGuard(strict_mode=True)

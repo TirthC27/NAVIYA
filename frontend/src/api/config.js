@@ -1,24 +1,27 @@
 /**
  * Centralized API configuration
  *
- * VITE_API_BASE_URL MUST be set:
- * - Production: https://naviyabackend-je3hanh5.b4a.run (Back4App)
- * - Local dev:  Override in .env if testing locally
+ * Production  – Uses Vercel rewrites (/api/* → Cloud Run) so requests
+ *               stay same-origin and CORS is never an issue.
+ * Local dev   – Set VITE_API_BASE_URL in .env (e.g. http://localhost:8080).
  */
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL;
+const rawUrl = (import.meta.env.VITE_API_BASE_URL || '').trim();
 
-if (!baseUrl || baseUrl.trim() === '') {
-  throw new Error(
-    '❌ VITE_API_BASE_URL is not set.\n' +
-    'Set it in Vercel env vars (production) or .env (local dev).'
+// In production, always use relative paths so the Vercel rewrite proxy
+// handles routing to the backend (avoids cross-origin / CORS issues).
+// In development, fall back to the env var or empty string.
+const baseUrl = import.meta.env.PROD ? '' : rawUrl;
+
+if (!import.meta.env.PROD && !rawUrl) {
+  console.warn(
+    '⚠️  VITE_API_BASE_URL is not set – API requests will use relative paths.\n' +
+    'Set it in .env for local development (e.g. http://localhost:8080).'
   );
 }
 
-if (import.meta.env.PROD && baseUrl.includes('localhost')) {
-  throw new Error(
-    `❌ Production build cannot use localhost: ${baseUrl}`
-  );
+if (!import.meta.env.PROD && rawUrl.includes('localhost') === false && rawUrl !== '') {
+  // Not a warning – just informational for dev builds pointing at remote backends
 }
 
 export const API_BASE_URL = baseUrl;
